@@ -1,0 +1,51 @@
+@model Candidate
+@{
+    ViewData["Title"] = Model.Name;
+    var position = Model.Position!;
+}
+
+<div class="row g-4">
+    <div class="col-md-4 col-lg-3">
+        <img src="@(Images.GetUrl(Model.PhotoFileName) ?? "/images/placeholder-photo.svg")" alt="Photograph of @Model.Name" class="img-fluid rounded border" />
+    </div>
+    <div class="col-md-8 col-lg-9">
+        <h1 class="h3 mb-1">@Model.Name</h1>
+        <p class="text-muted">
+            <a asp-controller="Positions" asp-action="Details" asp-route-id="@Model.PositionId">@position.Name</a>
+            · <a asp-controller="Municipalities" asp-action="Details" asp-route-id="@position.MunicipalityId">@position.Municipality!.Name</a>
+        </p>
+
+        <dl class="row">
+            <dt class="col-sm-3">Biography</dt>
+            <dd class="col-sm-9" style="white-space: pre-line">@(string.IsNullOrWhiteSpace(Model.Profile) ? "—" : Model.Profile)</dd>
+            <dt class="col-sm-3">Website</dt>
+            <dd class="col-sm-9">
+                @if (Model.Website is not null)
+                {
+                    <a href="@Model.Website" target="_blank" rel="noopener noreferrer">@Model.Website</a>
+                }
+                else
+                {
+                    <text>—</text>
+                }
+            </dd>
+            <dt class="col-sm-3">Email</dt>
+            <dd class="col-sm-9">
+                @if (Model.Email is not null)
+                {
+                    <a href="mailto:@Model.Email">@Model.Email</a>
+                }
+                else
+                {
+                    <text>—</text>
+                }
+            </dd>
+            <dt class="col-sm-3">Date Created</dt>
+            <dd class="col-sm-9">@Model.DateCreated.ToString("yyyy-MM-dd HH:mm") UTC</dd>
+        </dl>
+
+        <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@Model.CandidateId">Edit</a>
+        <a class="btn btn-outline-danger" asp-action="Delete" asp-route-id="@Model.CandidateId">Delete</a>
+        <a class="btn btn-link" asp-action="Index">Back to candidates</a>
+    </div>
+</div>

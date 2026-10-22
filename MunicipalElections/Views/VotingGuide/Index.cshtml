@@ -1,0 +1,79 @@
+@model VotingGuideViewModel
+@{
+    ViewData["Title"] = "My Voting Guide";
+    var returnUrl = Url.Action("Index");
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h1 class="h3 mb-1">My Voting Guide</h1>
+        <p class="text-muted mb-0">Your selections are saved for this browser session only. No account is needed.</p>
+    </div>
+    @if (Model.CandidateCount > 0)
+    {
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary" asp-action="Print" target="_blank">Print my guide</a>
+            <form asp-action="Clear" method="post" onsubmit="return confirm('Remove all candidates from your voting guide?');">
+                <button type="submit" class="btn btn-outline-danger">Clear all</button>
+            </form>
+        </div>
+    }
+</div>
+
+@if (Model.CandidateCount == 0)
+{
+    <div class="text-center border rounded-3 py-5 px-3">
+        <p class="lead mb-2">Your voting guide is empty.</p>
+        <p class="text-muted">Browse the candidates and choose <strong>+ Add to guide</strong> for the ones you plan to vote for.</p>
+        <a class="btn btn-primary" asp-controller="Candidates" asp-action="Index">Browse candidates</a>
+        <a class="btn btn-outline-primary" asp-controller="Municipalities" asp-action="Index">Browse municipalities</a>
+    </div>
+}
+
+@foreach (var group in Model.Municipalities)
+{
+    var municipality = group.Municipality;
+    <section class="card mb-4">
+        <div class="card-header d-flex flex-wrap align-items-center gap-3">
+            <img src="@(Images.GetUrl(municipality.LogoFileName) ?? "/images/placeholder-logo.svg")" alt="" class="rounded" width="40" height="40" style="object-fit: contain" />
+            <div class="flex-grow-1">
+                <h2 class="h5 mb-0">@municipality.Name</h2>
+                <div class="small text-muted">Election day: @municipality.ElectionDate.ToString("dddd, MMMM d, yyyy")</div>
+            </div>
+            <a class="btn btn-sm btn-outline-primary" asp-action="Print" asp-route-municipalityId="@municipality.MunicipalityId" target="_blank">Print @municipality.Name only</a>
+        </div>
+        <div class="card-body">
+            @foreach (var position in group.Positions)
+            {
+                <div class="mb-3">
+                    <div class="d-flex flex-wrap justify-content-between align-items-baseline">
+                        <h3 class="h6 mb-2">@position.Position.Name</h3>
+                        <span class="small @(position.IsOverSelected ? "text-danger fw-semibold" : "text-muted")">
+                            @position.Candidates.Count of @position.Position.SeatsAvailable seat(s) selected
+                        </span>
+                    </div>
+                    @if (position.IsOverSelected)
+                    {
+                        <div class="alert alert-warning py-2 small">
+                            You selected more candidates than there are seats for @position.Position.Name. You can vote for at most @position.Position.SeatsAvailable.
+                        </div>
+                    }
+                    <ul class="list-group">
+                        @foreach (var candidate in position.Candidates)
+                        {
+                            <li class="list-group-item d-flex align-items-center gap-3">
+                                <img src="@(Images.GetUrl(candidate.PhotoFileName) ?? "/images/placeholder-photo.svg")" alt="" class="rounded-circle candidate-thumb" />
+                                <a class="flex-grow-1" asp-controller="Candidates" asp-action="Details" asp-route-id="@candidate.CandidateId">@candidate.Name</a>
+                                <form asp-action="Remove" asp-route-id="@candidate.CandidateId" method="post">
+                                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" aria-label="Remove @candidate.Name">Remove</button>
+                                </form>
+                            </li>
+                        }
+                    </ul>
+                </div>
+            }
+            <a class="small" asp-controller="Municipalities" asp-action="Details" asp-route-id="@municipality.MunicipalityId">Add more candidates from @municipality.Name</a>
+        </div>
+    </section>
+}

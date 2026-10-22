@@ -1,0 +1,25 @@
+@model Candidate
+@inject VotingGuide Guide
+@{
+    // Come back to the same card after the post-redirect.
+    var returnUrl = $"{Context.Request.Path}{Context.Request.QueryString}#candidate-{Model.CandidateId}";
+    var selected = Guide.Contains(Model.CandidateId);
+    var size = ViewData["ButtonSize"] as string ?? "btn-sm";
+}
+
+@if (selected)
+{
+    <form asp-controller="VotingGuide" asp-action="Remove" asp-route-id="@Model.CandidateId" method="post" class="d-inline">
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <button type="submit" class="btn @size btn-success" aria-label="Remove @Model.Name from my voting guide">
+            &#10003; In my guide <span class="visually-hidden">(remove)</span>
+        </button>
+    </form>
+}
+else
+{
+    <form asp-controller="VotingGuide" asp-action="Add" asp-route-id="@Model.CandidateId" method="post" class="d-inline">
+        <input type="hidden" name="returnUrl" value="@returnUrl" />
+        <button type="submit" class="btn @size btn-outline-success" aria-label="Add @Model.Name to my voting guide">+ Add to guide</button>
+    </form>
+}

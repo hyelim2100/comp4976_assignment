@@ -1,0 +1,77 @@
+@model IEnumerable<Candidate>
+@{
+    ViewData["Title"] = "Candidates";
+    var positions = (IReadOnlyList<PositionOption>)ViewData["Positions"]!;
+    var positionFilter = ViewData["PositionFilter"] as int?;
+    var municipalities = (SelectList)ViewData["Municipalities"]!;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Candidates</h1>
+    <a class="btn btn-primary" asp-action="Create" asp-route-positionId="@positionFilter">Add candidate</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <label for="search" class="visually-hidden">Search by name</label>
+        <input id="search" name="search" value="@ViewData["Search"]" class="form-control" placeholder="Search by name" />
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <label for="municipalityId" class="visually-hidden">Municipality</label>
+        <select id="municipalityId" name="municipalityId" class="form-select" asp-items="municipalities" data-filters-positions="#positionId">
+            <option value="">All municipalities</option>
+        </select>
+    </div>
+    <div class="col-sm-6 col-md-3">
+        <label for="positionId" class="visually-hidden">Position</label>
+        <select id="positionId" name="positionId" class="form-select">
+            <option value="">All positions</option>
+            @foreach (var p in positions)
+            {
+                <option value="@p.PositionId" data-municipality="@p.MunicipalityId" selected="@(p.PositionId == positionFilter)">@p.Name</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2 d-grid">
+        <button type="submit" class="btn btn-outline-primary">Filter</button>
+    </div>
+</form>
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Municipality</th>
+                <th>Date Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var c in Model)
+            {
+                <tr>
+                    <td style="width: 56px"><img src="@(Images.GetUrl(c.PhotoFileName) ?? "/images/placeholder-photo.svg")" alt="" class="rounded-circle" width="40" height="40" /></td>
+                    <td><a asp-action="Details" asp-route-id="@c.CandidateId">@c.Name</a></td>
+                    <td>@c.Position!.Name</td>
+                    <td>@c.Position.Municipality!.Name</td>
+                    <td class="text-nowrap">@c.DateCreated.ToString("yyyy-MM-dd")</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@c.CandidateId">Edit</a>
+                        <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@c.CandidateId">Delete</a>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="6" class="text-muted">No candidates found.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@section Scripts {
+    <script src="~/js/position-filter.js" asp-append-version="true"></script>
+}

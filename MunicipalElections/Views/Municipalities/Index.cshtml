@@ -1,0 +1,18 @@
+@model IReadOnlyList<Municipality>
+@{
+    ViewData["Title"] = "Municipalities";
+}
+
+<h1 class="h3 mb-1">Municipalities</h1>
+<p class="text-muted mb-4">Choose a municipality to see the positions on its ballot and the candidates running for each.</p>
+
+<div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    @foreach (var municipality in Model)
+    {
+        <partial name="_MunicipalityCard" model="municipality" />
+    }
+</div>
+@if (Model.Count == 0)
+{
+    <p class="text-muted">No municipalities have been added yet.</p>
+}

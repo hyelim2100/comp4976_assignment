@@ -1,0 +1,18 @@
+@model Municipality
+@{
+    ViewData["Title"] = $"Delete {Model.Name}";
+    var candidateCount = Model.Positions.Sum(p => p.Candidates.Count);
+}
+
+<h1 class="h3 mb-3">Delete Municipality</h1>
+
+<div class="alert alert-danger">
+    <p class="mb-1">Are you sure you want to delete <strong>@Model.Name</strong>?</p>
+    <p class="mb-0">This also deletes its <strong>@Model.Positions.Count</strong> position(s), <strong>@candidateCount</strong> candidate(s),
+        their photographs, and the "@MunicipalElections.Data.AppRoles.MunicipalityAdmin(Model.Name)" group.</p>
+</div>
+
+<form asp-action="Delete" asp-route-id="@Model.MunicipalityId" method="post">
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a class="btn btn-link" asp-action="Details" asp-route-id="@Model.MunicipalityId">Cancel</a>
+</form>

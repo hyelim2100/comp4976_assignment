@@ -1,0 +1,35 @@
+@inject MunicipalityAccess Access
+@{
+    Layout = "/Views/Shared/_Layout.cshtml";
+    var current = ViewContext.RouteData.Values["controller"] as string;
+    string NavClass(string controller) => "list-group-item list-group-item-action" + (controller == current ? " active" : "");
+}
+
+<div class="row g-4">
+    <aside class="col-lg-3 col-xl-2">
+        <div class="mb-2 small text-muted">
+            Signed in as <strong>@User.Identity?.Name</strong><br />
+            @(Access.IsSuperAdmin ? "Super Admin — all municipalities" : "Municipality administrator")
+        </div>
+        <nav class="list-group mb-3" aria-label="Admin navigation">
+            <a class="@NavClass("Dashboard")" asp-area="Admin" asp-controller="Dashboard" asp-action="Index">Dashboard</a>
+            <a class="@NavClass("Municipalities")" asp-area="Admin" asp-controller="Municipalities" asp-action="Index">Municipalities</a>
+            <a class="@NavClass("Positions")" asp-area="Admin" asp-controller="Positions" asp-action="Index">Positions</a>
+            <a class="@NavClass("Candidates")" asp-area="Admin" asp-controller="Candidates" asp-action="Index">Candidates</a>
+        </nav>
+    </aside>
+    <section class="col-lg-9 col-xl-10">
+        @if (TempData[AdminControllerBase.StatusMessageKey] is string message)
+        {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                @message
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+        @RenderBody()
+    </section>
+</div>
+
+@section Scripts {
+    @await RenderSectionAsync("Scripts", required: false)
+}

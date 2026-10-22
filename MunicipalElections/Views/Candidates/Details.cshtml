@@ -1,0 +1,65 @@
+@model Candidate
+@{
+    ViewData["Title"] = Model.Name;
+    var position = Model.Position!;
+    var municipality = position.Municipality!;
+    var others = (IReadOnlyList<Candidate>)ViewData["OtherCandidates"]!;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Municipalities" asp-action="Details" asp-route-id="@municipality.MunicipalityId">@municipality.Name</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Candidates" asp-action="Index" asp-route-municipalityId="@municipality.MunicipalityId" asp-route-positionId="@position.PositionId">@position.Name</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+    </ol>
+</nav>
+
+<div class="row g-4 mb-5" id="candidate-@Model.CandidateId">
+    <div class="col-sm-5 col-md-4 col-lg-3">
+        <img src="@(Images.GetUrl(Model.PhotoFileName) ?? "/images/placeholder-photo.svg")" alt="Photograph of @Model.Name" class="img-fluid rounded-3 border candidate-photo" />
+    </div>
+    <div class="col-sm-7 col-md-8 col-lg-9">
+        <h1 class="h2 mb-1">@Model.Name</h1>
+        <p class="lead text-brand mb-1">Candidate for @position.Name</p>
+        <p class="text-muted">
+            @municipality.Name, @municipality.Province · Election day @municipality.ElectionDate.ToString("MMMM d, yyyy")
+            · @position.SeatsAvailable seat(s)
+        </p>
+
+        <div class="mb-4">
+            @{ ViewData["ButtonSize"] = "btn-lg"; }
+            <partial name="_GuideButton" model="Model" />
+            @{ ViewData["ButtonSize"] = null; }
+        </div>
+
+        <h2 class="h5">Biography</h2>
+        <p style="white-space: pre-line">@(string.IsNullOrWhiteSpace(Model.Profile) ? "This candidate has not provided a biography." : Model.Profile)</p>
+
+        @if (Model.Website is not null || Model.Email is not null)
+        {
+            <h2 class="h5 mt-4">Contact</h2>
+            <ul class="list-unstyled">
+                @if (Model.Website is not null)
+                {
+                    <li>Website: <a href="@Model.Website" target="_blank" rel="noopener noreferrer">@Model.Website</a></li>
+                }
+                @if (Model.Email is not null)
+                {
+                    <li>Email: <a href="mailto:@Model.Email">@Model.Email</a></li>
+                }
+            </ul>
+        }
+    </div>
+</div>
+
+@if (others.Count > 0)
+{
+    <h2 class="h5 mb-3">Other candidates for @position.Name in @municipality.Name</h2>
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+        @{ ViewData["ShowMunicipality"] = false; }
+        @foreach (var candidate in others)
+        {
+            <partial name="_CandidateCard" model="candidate" />
+        }
+    </div>
+}

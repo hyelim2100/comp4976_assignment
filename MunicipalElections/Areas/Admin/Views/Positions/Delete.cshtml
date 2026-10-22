@@ -1,0 +1,16 @@
+@model Position
+@{
+    ViewData["Title"] = $"Delete {Model.Name}";
+}
+
+<h1 class="h3 mb-3">Delete Position</h1>
+
+<div class="alert alert-danger">
+    <p class="mb-1">Are you sure you want to delete <strong>@Model.Name</strong> in <strong>@Model.Municipality!.Name</strong>?</p>
+    <p class="mb-0">This also deletes its <strong>@Model.Candidates.Count</strong> candidate(s) and their photographs.</p>
+</div>
+
+<form asp-action="Delete" asp-route-id="@Model.PositionId" method="post">
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a class="btn btn-link" asp-action="Details" asp-route-id="@Model.PositionId">Cancel</a>
+</form>

@@ -1,0 +1,96 @@
+@model VotingGuideViewModel
+@{
+    Layout = "_PrintLayout";
+    ViewData["Title"] = "My Voting Guide";
+}
+
+<div class="print-toolbar alert alert-light border d-flex flex-wrap align-items-center gap-2">
+    <button type="button" class="btn btn-primary" onclick="window.print()">Print</button>
+    @if (Model.ShowPhotos)
+    {
+        <a class="btn btn-outline-secondary" asp-action="Print" asp-route-municipalityId="@Model.MunicipalityFilter" asp-route-photos="false">Hide photos</a>
+    }
+    else
+    {
+        <a class="btn btn-outline-secondary" asp-action="Print" asp-route-municipalityId="@Model.MunicipalityFilter">Show photos</a>
+    }
+    <a class="btn btn-link" asp-action="Index">Back to my voting guide</a>
+</div>
+
+<header class="mb-4">
+    <h1 class="mb-1">My Voting Guide</h1>
+    <div>Printed on <strong id="print-date">@DateTime.Now.ToString("MMMM d, yyyy")</strong></div>
+</header>
+
+@if (Model.CandidateCount == 0)
+{
+    <p>No candidates selected. <a asp-action="Index">Go back to your voting guide</a>.</p>
+}
+
+@foreach (var group in Model.Municipalities)
+{
+    var municipality = group.Municipality;
+    <section class="guide-section">
+        <div class="d-flex align-items-center gap-3 mb-2">
+            @if (Model.ShowPhotos && municipality.LogoFileName is not null)
+            {
+                <img src="@Images.GetUrl(municipality.LogoFileName)" alt="" class="guide-logo" />
+            }
+            <div>
+                <h2 class="h4 mb-0">@municipality.Name</h2>
+                <div>Election Date: <strong>@municipality.ElectionDate.ToString("dddd, MMMM d, yyyy")</strong></div>
+            </div>
+        </div>
+
+        <table class="table table-sm guide-table mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 2rem"><span class="visually-hidden">Voted</span></th>
+                    <th style="width: 30%">Position</th>
+                    @if (Model.ShowPhotos)
+                    {
+                        <th style="width: 3.5rem"><span class="visually-hidden">Photo</span></th>
+                    }
+                    <th>Candidate</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var position in group.Positions)
+                {
+                    var first = true;
+                    @foreach (var candidate in position.Candidates)
+                    {
+                        <tr>
+                            <td><span class="checkbox" aria-hidden="true"></span></td>
+                            <td>
+                                @if (first)
+                                {
+                                    <strong>@position.Position.Name</strong>
+                                    <div class="small">vote for up to @position.Position.SeatsAvailable</div>
+                                }
+                            </td>
+                            @if (Model.ShowPhotos)
+                            {
+                                <td><img src="@(Images.GetUrl(candidate.PhotoFileName) ?? "/images/placeholder-photo.svg")" alt="" class="guide-photo" /></td>
+                            }
+                            <td>@candidate.Name</td>
+                        </tr>
+                        first = false;
+                    }
+                }
+            </tbody>
+        </table>
+    </section>
+}
+
+<footer class="small mt-4">
+    This personal guide lists your own choices. It is not an official ballot.
+</footer>
+
+@section Scripts {
+    <script>
+        // Show the print date in the voter's own time zone.
+        document.getElementById("print-date").textContent =
+            new Date().toLocaleDateString("en-CA", { year: "numeric", month: "long", day: "numeric" });
+    </script>
+}

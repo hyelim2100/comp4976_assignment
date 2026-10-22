@@ -1,0 +1,56 @@
+@model CandidateSearchViewModel
+@{
+    ViewData["Title"] = "Candidates";
+}
+
+<h1 class="h3 mb-1">Candidates</h1>
+<p class="text-muted mb-3">Search by name or narrow the list by municipality and position.</p>
+
+<form method="get" class="card card-body mb-4" role="search">
+    <div class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label for="search" class="form-label small mb-1">Name</label>
+            <input id="search" name="search" value="@Model.Search" class="form-control" placeholder="e.g. Chen" />
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <label for="municipalityId" class="form-label small mb-1">Municipality</label>
+            <select id="municipalityId" name="municipalityId" class="form-select" asp-items="Model.MunicipalityOptions" data-filters-positions="#positionId">
+                <option value="">All municipalities</option>
+            </select>
+        </div>
+        <div class="col-sm-6 col-md-3">
+            <label for="positionId" class="form-label small mb-1">Position</label>
+            <select id="positionId" name="positionId" class="form-select">
+                <option value="">All positions</option>
+                @foreach (var p in Model.PositionOptions)
+                {
+                    <option value="@p.PositionId" data-municipality="@p.MunicipalityId" selected="@(p.PositionId == Model.PositionId)">@p.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-md-2 d-grid">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </div>
+    </div>
+    @if (Model.IsFiltered)
+    {
+        <div class="mt-2 small"><a asp-action="Index">Clear filters</a></div>
+    }
+</form>
+
+<p class="text-muted small" role="status">@Model.Candidates.Count candidate(s) found</p>
+
+<div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+    @foreach (var candidate in Model.Candidates)
+    {
+        <partial name="_CandidateCard" model="candidate" />
+    }
+</div>
+@if (Model.Candidates.Count == 0)
+{
+    <div class="text-center text-muted py-5">No candidates match your search.</div>
+}
+
+@section Scripts {
+    <script src="~/js/position-filter.js" asp-append-version="true"></script>
+}

@@ -1,6 +1,9 @@
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MunicipalElections.Models;
+using MunicipalElections.Services;
 
 namespace MunicipalElections.Data;
 
@@ -16,10 +19,20 @@ public static class DbSeeder
         var db = services.GetRequiredService<ApplicationDbContext>();
         var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        var images = services.GetRequiredService<ImageStorage>();
+
+        // SQLite creates the database file but not its folder (e.g. /home/data on Azure App Service).
+        var dataSource = new SqliteConnectionStringBuilder(db.Database.GetConnectionString()).DataSource;
+        var dataDirectory = Path.GetDirectoryName(Path.GetFullPath(dataSource));
+        if (!string.IsNullOrEmpty(dataDirectory))
+        {
+            Directory.CreateDirectory(dataDirectory);
+        }
 
         await db.Database.MigrateAsync();
 
         await SeedMunicipalitiesAsync(db);
+        images.CopySeedImages(Path.Combine(AppContext.BaseDirectory, "SeedData", "Images"));
 
         await EnsureRoleAsync(roleManager, AppRoles.SuperAdmin, municipalityId: null);
         foreach (var municipality in await db.Municipalities.ToListAsync())
@@ -42,6 +55,7 @@ public static class DbSeeder
             new Municipality
             {
                 Name = "Pitt Meadows",
+                LogoFileName = SeedLogoFileName("Pitt Meadows"),
                 Province = "British Columbia",
                 ElectionDate = ElectionDate,
                 Description = "A small city in Metro Vancouver bordered by the Fraser and Pitt Rivers, known for its farmland, dikes and trails.",
@@ -84,6 +98,7 @@ public static class DbSeeder
             new Municipality
             {
                 Name = "Maple Ridge",
+                LogoFileName = SeedLogoFileName("Maple Ridge"),
                 Province = "British Columbia",
                 ElectionDate = ElectionDate,
                 Description = "A growing city on the north bank of the Fraser River at the foot of the Golden Ears mountains.",
@@ -125,6 +140,7 @@ public static class DbSeeder
             new Municipality
             {
                 Name = "Burnaby",
+                LogoFileName = SeedLogoFileName("Burnaby"),
                 Province = "British Columbia",
                 ElectionDate = ElectionDate,
                 Description = "A large city between Vancouver and the Fraser Valley, home to Metrotown, Burnaby Mountain and extensive parkland.",
@@ -168,7 +184,12 @@ public static class DbSeeder
     }
 
     private static Candidate NewCandidate(string name, string profile, string? website = null, string? email = null) =>
-        new() { Name = name, Profile = profile, Website = website, Email = email };
+        new() { Name = name, Profile = profile, Website = website, Email = email, PhotoFileName = $"seed-photo-{Slug(name)}.png" };
+
+    // Sample images live in SeedData/Images and are copied to the uploads folder on startup.
+    private static string SeedLogoFileName(string municipalityName) => $"seed-logo-{Slug(municipalityName)}.png";
+
+    private static string Slug(string value) => Regex.Replace(value.ToLowerInvariant(), "[^a-z0-9]+", "-").Trim('-');
 
     private static async Task EnsureRoleAsync(RoleManager<ApplicationRole> roleManager, string roleName, int? municipalityId)
     {

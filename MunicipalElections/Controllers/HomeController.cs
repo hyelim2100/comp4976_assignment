@@ -1,14 +1,21 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using MunicipalElections.Data;
 using MunicipalElections.Models;
 
 namespace MunicipalElections.Controllers;
 
-public class HomeController : Controller
+public class HomeController(ApplicationDbContext db) : Controller
 {
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        return View();
+        var municipalities = await db.Municipalities.AsNoTracking()
+            .Include(m => m.Positions).ThenInclude(p => p.Candidates)
+            .OrderBy(m => m.Name)
+            .ToListAsync();
+
+        return View(municipalities);
     }
 
     public IActionResult Privacy()

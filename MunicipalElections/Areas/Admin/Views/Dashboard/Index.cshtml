@@ -1,0 +1,75 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Admin Dashboard";
+}
+
+<h1 class="h3 mb-4">Dashboard</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-4">
+        <a class="card text-decoration-none h-100 border-primary" asp-controller="Municipalities" asp-action="Index">
+            <div class="card-body">
+                <div class="text-muted small">Municipalities</div>
+                <div class="display-6 fw-semibold text-primary">@Model.MunicipalityCount</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-sm-4">
+        <a class="card text-decoration-none h-100 border-success" asp-controller="Positions" asp-action="Index">
+            <div class="card-body">
+                <div class="text-muted small">Positions</div>
+                <div class="display-6 fw-semibold text-success">@Model.PositionCount</div>
+            </div>
+        </a>
+    </div>
+    <div class="col-sm-4">
+        <a class="card text-decoration-none h-100 border-info" asp-controller="Candidates" asp-action="Index">
+            <div class="card-body">
+                <div class="text-muted small">Candidates</div>
+                <div class="display-6 fw-semibold text-info">@Model.CandidateCount</div>
+            </div>
+        </a>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-2">
+    <h2 class="h5 mb-0">@(Model.IsSuperAdmin ? "All municipalities" : "Your municipality")</h2>
+    <div class="btn-group">
+        @if (Model.IsSuperAdmin)
+        {
+            <a class="btn btn-sm btn-outline-primary" asp-controller="Municipalities" asp-action="Create">Add municipality</a>
+        }
+        <a class="btn btn-sm btn-outline-primary" asp-controller="Positions" asp-action="Create">Add position</a>
+        <a class="btn btn-sm btn-primary" asp-controller="Candidates" asp-action="Create">Add candidate</a>
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Municipality</th>
+                <th>Election Date</th>
+                <th class="text-end">Positions</th>
+                <th class="text-end">Candidates</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in Model.Municipalities)
+            {
+                <tr>
+                    <td style="width: 56px"><img src="@(Images.GetUrl(m.LogoFileName) ?? "/images/placeholder-logo.svg")" alt="" class="rounded" width="40" height="40" /></td>
+                    <td><a asp-controller="Municipalities" asp-action="Details" asp-route-id="@m.MunicipalityId">@m.Name</a></td>
+                    <td>@m.ElectionDate.ToString("MMMM d, yyyy")</td>
+                    <td class="text-end"><a asp-controller="Positions" asp-action="Index" asp-route-municipalityId="@m.MunicipalityId">@m.PositionCount</a></td>
+                    <td class="text-end"><a asp-controller="Candidates" asp-action="Index" asp-route-municipalityId="@m.MunicipalityId">@m.CandidateCount</a></td>
+                </tr>
+            }
+            @if (Model.Municipalities.Count == 0)
+            {
+                <tr><td colspan="5" class="text-muted">No municipalities yet.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

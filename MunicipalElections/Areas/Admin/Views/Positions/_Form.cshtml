@@ -1,0 +1,25 @@
+@model Position
+@{
+    var municipalities = (SelectList)ViewData["Municipalities"]!;
+}
+
+<div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+<input type="hidden" asp-for="PositionId" />
+
+<div class="mb-3">
+    <label asp-for="MunicipalityId" class="form-label"></label>
+    <select asp-for="MunicipalityId" class="form-select" asp-items="municipalities">
+        <option value="">-- Select municipality --</option>
+    </select>
+    <span asp-validation-for="MunicipalityId" class="text-danger"></span>
+</div>
+<div class="mb-3">
+    <label asp-for="Name" class="form-label">Position Name</label>
+    <input asp-for="Name" class="form-control" placeholder="e.g. Mayor, Councillor, School Trustee" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+<div class="mb-3">
+    <label asp-for="SeatsAvailable" class="form-label"></label>
+    <input asp-for="SeatsAvailable" class="form-control" min="1" max="100" />
+    <span asp-validation-for="SeatsAvailable" class="text-danger"></span>
+</div>

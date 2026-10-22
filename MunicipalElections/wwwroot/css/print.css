@@ -1,0 +1,74 @@
+/* Printable voting guide: plain black-on-white, compact, no navigation. */
+.print-page {
+  max-width: 800px;
+  color: #000;
+}
+
+.print-page h1 {
+  font-size: 1.6rem;
+}
+
+.guide-section {
+  border-top: 2px solid #000;
+  padding-top: .75rem;
+  margin-bottom: 1.5rem;
+  break-inside: avoid;
+}
+
+.guide-table th,
+.guide-table td {
+  vertical-align: middle;
+  padding: .35rem .5rem;
+}
+
+.guide-table thead th {
+  border-bottom: 1px solid #000;
+}
+
+.guide-photo {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.guide-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
+
+.checkbox {
+  display: inline-block;
+  width: 1rem;
+  height: 1rem;
+  border: 1.5px solid #000;
+}
+
+@media print {
+  @page {
+    margin: 1.5cm;
+  }
+
+  body {
+    font-size: 11pt;
+  }
+
+  .print-page {
+    max-width: none;
+    padding: 0 !important;
+  }
+
+  .print-toolbar {
+    display: none !important;
+  }
+
+  a {
+    color: #000;
+    text-decoration: none;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+}

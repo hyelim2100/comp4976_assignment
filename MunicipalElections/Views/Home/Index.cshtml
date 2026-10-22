@@ -1,8 +1,62 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model IReadOnlyList<Municipality>
+@{
+    ViewData["Title"] = "Know your candidates";
+    var electionDates = Model.Select(m => m.ElectionDate.Date).Distinct().ToList();
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<section class="hero p-4 p-md-5 mb-5">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <h1 class="display-6 fw-semibold">Know your candidates before you vote</h1>
+            <p class="lead mb-0">
+                Browse the candidates running for Mayor, Councillor and School Trustee in your municipality,
+                build your own voting guide, and print it to take with you on election day.
+                @if (electionDates.Count == 1)
+                {
+                    <br /><strong>General local election: @electionDates[0].ToString("dddd, MMMM d, yyyy")</strong>
+                }
+            </p>
+        </div>
+        <div class="col-lg-5">
+            <form asp-controller="Candidates" asp-action="Index" method="get" class="bg-white rounded-3 p-3 text-dark shadow-sm" role="search">
+                <label for="hero-search" class="form-label fw-semibold">Find a candidate</label>
+                <div class="input-group">
+                    <input id="hero-search" name="search" class="form-control" placeholder="Candidate name" />
+                    <button class="btn btn-primary" type="submit">Search</button>
+                </div>
+                <div class="form-text">Or <a asp-controller="Candidates" asp-action="Index">browse all candidates</a>.</div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section class="mb-5">
+    <h2 class="h4 mb-3">How it works</h2>
+    <div class="row g-3">
+        <div class="col-md-4 d-flex gap-3">
+            <div class="step-number">1</div>
+            <div><strong>Browse</strong><br /><span class="text-muted">Pick your municipality and read each candidate's profile.</span></div>
+        </div>
+        <div class="col-md-4 d-flex gap-3">
+            <div class="step-number">2</div>
+            <div><strong>Select</strong><br /><span class="text-muted">Add your preferred candidates to your voting guide. No account needed.</span></div>
+        </div>
+        <div class="col-md-4 d-flex gap-3">
+            <div class="step-number">3</div>
+            <div><strong>Print</strong><br /><span class="text-muted">Print a clean, one-page guide to bring to the polls.</span></div>
+        </div>
+    </div>
+</section>
+
+<section>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h4 mb-0">Municipalities</h2>
+        <a asp-controller="Municipalities" asp-action="Index">View all</a>
+    </div>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        @foreach (var municipality in Model)
+        {
+            <partial name="_MunicipalityCard" model="municipality" />
+        }
+    </div>
+</section>

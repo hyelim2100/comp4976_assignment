@@ -1,0 +1,54 @@
+@model IEnumerable<Position>
+@{
+    ViewData["Title"] = "Positions";
+    var municipalityFilter = ViewData["MunicipalityFilter"] as int?;
+    var municipalities = (SelectList)ViewData["Municipalities"]!;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Positions</h1>
+    <a class="btn btn-primary" asp-action="Create" asp-route-municipalityId="@municipalityFilter">Add position</a>
+</div>
+
+<form method="get" class="row g-2 mb-3">
+    <div class="col-sm-6 col-md-4">
+        <label for="municipalityId" class="visually-hidden">Municipality</label>
+        <select id="municipalityId" name="municipalityId" class="form-select" asp-items="municipalities" onchange="this.form.submit()">
+            <option value="">All municipalities</option>
+        </select>
+    </div>
+    <noscript><div class="col-auto"><button class="btn btn-outline-secondary">Filter</button></div></noscript>
+</form>
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Municipality</th>
+                <th class="text-end">Seats</th>
+                <th class="text-end">Candidates</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model)
+            {
+                <tr>
+                    <td><a asp-action="Details" asp-route-id="@p.PositionId">@p.Name</a></td>
+                    <td>@p.Municipality!.Name</td>
+                    <td class="text-end">@p.SeatsAvailable</td>
+                    <td class="text-end"><a asp-controller="Candidates" asp-action="Index" asp-route-positionId="@p.PositionId">@p.Candidates.Count</a></td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@p.PositionId">Edit</a>
+                        <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@p.PositionId">Delete</a>
+                    </td>
+                </tr>
+            }
+            @if (!Model.Any())
+            {
+                <tr><td colspan="5" class="text-muted">No positions found.</td></tr>
+            }
+        </tbody>
+    </table>
+</div>

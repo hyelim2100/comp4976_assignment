@@ -1,0 +1,30 @@
+@model Municipality
+
+<div class="col">
+    <div class="card h-100 card-hover">
+        <div class="card-body d-flex flex-column">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <img src="@(Images.GetUrl(Model.LogoFileName) ?? "/images/placeholder-logo.svg")" alt="@Model.Name logo" class="municipality-logo rounded" />
+                <div>
+                    <h3 class="h5 mb-0">
+                        <a class="text-decoration-none" asp-controller="Municipalities" asp-action="Details" asp-route-id="@Model.MunicipalityId">@Model.Name</a>
+                    </h3>
+                    <div class="small text-muted">@Model.Province</div>
+                </div>
+            </div>
+            <p class="mb-2"><strong>Election day:</strong> @Model.ElectionDate.ToString("dddd, MMMM d, yyyy")</p>
+            @if (!string.IsNullOrWhiteSpace(Model.Description))
+            {
+                <p class="small text-muted line-clamp-3">@Model.Description</p>
+            }
+            <div class="small mb-3">
+                <span class="badge text-bg-light border">@Model.Positions.Count positions</span>
+                <span class="badge text-bg-light border">@Model.Positions.Sum(p => p.Candidates.Count) candidates</span>
+            </div>
+            <div class="mt-auto d-flex flex-wrap gap-2">
+                <a class="btn btn-sm btn-primary" asp-controller="Municipalities" asp-action="Details" asp-route-id="@Model.MunicipalityId">View ballot</a>
+                <a class="btn btn-sm btn-outline-primary" asp-controller="Candidates" asp-action="Index" asp-route-municipalityId="@Model.MunicipalityId">All candidates</a>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,19 @@
+@model Candidate
+@{
+    ViewData["Title"] = $"Delete {Model.Name}";
+}
+
+<h1 class="h3 mb-3">Delete Candidate</h1>
+
+<div class="alert alert-danger d-flex gap-3 align-items-center">
+    <img src="@(Images.GetUrl(Model.PhotoFileName) ?? "/images/placeholder-photo.svg")" alt="" class="rounded-circle" width="56" height="56" />
+    <div>
+        Are you sure you want to delete <strong>@Model.Name</strong>
+        (@Model.Position!.Name, @Model.Position.Municipality!.Name)?
+    </div>
+</div>
+
+<form asp-action="Delete" asp-route-id="@Model.CandidateId" method="post">
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a class="btn btn-link" asp-action="Details" asp-route-id="@Model.CandidateId">Cancel</a>
+</form>

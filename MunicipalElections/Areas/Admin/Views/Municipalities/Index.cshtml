@@ -1,0 +1,49 @@
+@model IEnumerable<Municipality>
+@{
+    ViewData["Title"] = "Municipalities";
+    var isSuperAdmin = (bool)ViewData["IsSuperAdmin"]!;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0">Municipalities</h1>
+    @if (isSuperAdmin)
+    {
+        <a class="btn btn-primary" asp-action="Create">Add municipality</a>
+    }
+</div>
+
+<div class="table-responsive">
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th></th>
+                <th>Name</th>
+                <th>Province</th>
+                <th>Election Date</th>
+                <th class="text-end">Positions</th>
+                <th class="text-end">Candidates</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var m in Model)
+            {
+                <tr>
+                    <td style="width: 56px"><img src="@(Images.GetUrl(m.LogoFileName) ?? "/images/placeholder-logo.svg")" alt="@m.Name logo" class="rounded" width="40" height="40" /></td>
+                    <td><a asp-action="Details" asp-route-id="@m.MunicipalityId">@m.Name</a></td>
+                    <td>@m.Province</td>
+                    <td>@m.ElectionDate.ToString("MMMM d, yyyy")</td>
+                    <td class="text-end">@m.Positions.Count</td>
+                    <td class="text-end">@m.Positions.Sum(p => p.Candidates.Count)</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@m.MunicipalityId">Edit</a>
+                        @if (isSuperAdmin)
+                        {
+                            <a class="btn btn-sm btn-outline-danger" asp-action="Delete" asp-route-id="@m.MunicipalityId">Delete</a>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

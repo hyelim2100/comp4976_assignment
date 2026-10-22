@@ -1,0 +1,56 @@
+@model Municipality
+@{
+    ViewData["Title"] = Model.Name;
+    ViewData["ShowMunicipality"] = false;
+}
+
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Municipalities</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.Name</li>
+    </ol>
+</nav>
+
+<div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    <img src="@(Images.GetUrl(Model.LogoFileName) ?? "/images/placeholder-logo.svg")" alt="@Model.Name logo" class="rounded border" width="96" height="96" style="object-fit: contain" />
+    <div class="flex-grow-1">
+        <h1 class="h3 mb-1">@Model.Name</h1>
+        <div class="text-muted">@Model.Province · Election day: <strong>@Model.ElectionDate.ToString("dddd, MMMM d, yyyy")</strong></div>
+    </div>
+    <a class="btn btn-outline-primary" asp-controller="Candidates" asp-action="Index" asp-route-municipalityId="@Model.MunicipalityId">Search candidates</a>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Description))
+{
+    <p class="mb-4">@Model.Description</p>
+}
+
+<div class="card mb-4">
+    <div class="card-body py-2">
+        <strong>On the ballot:</strong>
+        @foreach (var p in Model.Positions.OrderBy(p => p.PositionId))
+        {
+            <a class="badge text-bg-light border text-decoration-none me-1" href="#position-@p.PositionId">@p.Name (@p.SeatsAvailable)</a>
+        }
+    </div>
+</div>
+
+@foreach (var position in Model.Positions.OrderBy(p => p.PositionId))
+{
+    <section class="mb-5" id="position-@position.PositionId">
+        <div class="d-flex flex-wrap justify-content-between align-items-baseline mb-3 border-bottom pb-2">
+            <h2 class="h4 mb-0">@position.Name</h2>
+            <span class="text-muted">Vote for up to <strong>@position.SeatsAvailable</strong> · @position.Candidates.Count candidate(s)</span>
+        </div>
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+            @foreach (var candidate in position.Candidates.OrderBy(c => c.Name))
+            {
+                <partial name="_CandidateCard" model="candidate" />
+            }
+        </div>
+        @if (position.Candidates.Count == 0)
+        {
+            <p class="text-muted">No candidates have registered for this position yet.</p>
+        }
+    </section>
+}

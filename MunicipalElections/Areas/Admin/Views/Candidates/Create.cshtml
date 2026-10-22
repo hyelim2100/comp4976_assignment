@@ -1,0 +1,22 @@
+@model CandidateFormViewModel
+@{
+    ViewData["Title"] = "Add Candidate";
+}
+
+<h1 class="h3 mb-3">Add Candidate</h1>
+
+<div class="row">
+    <div class="col-lg-9">
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <partial name="_Form" model="Model" />
+            <button type="submit" class="btn btn-primary">Create</button>
+            <a class="btn btn-link" asp-action="Index">Cancel</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script src="~/js/image-validation.js" asp-append-version="true"></script>
+    <script src="~/js/position-filter.js" asp-append-version="true"></script>
+}

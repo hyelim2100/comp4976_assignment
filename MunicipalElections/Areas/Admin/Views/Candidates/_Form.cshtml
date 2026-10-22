@@ -1,0 +1,66 @@
+@model CandidateFormViewModel
+
+<div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+<input type="hidden" asp-for="CandidateId" />
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label"></label>
+    <input asp-for="Name" class="form-control" />
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="MunicipalityId" class="form-label"></label>
+        <select asp-for="MunicipalityId" class="form-select" asp-items="Model.MunicipalityOptions" data-filters-positions="#PositionId">
+            <option value="">-- Select municipality --</option>
+        </select>
+        <span asp-validation-for="MunicipalityId" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="PositionId" class="form-label"></label>
+        <select asp-for="PositionId" class="form-select">
+            <option value="">-- Select position --</option>
+            @foreach (var p in Model.PositionOptions)
+            {
+                <option value="@p.PositionId" data-municipality="@p.MunicipalityId">@p.Name</option>
+            }
+        </select>
+        <span asp-validation-for="PositionId" class="text-danger"></span>
+    </div>
+</div>
+<div class="mb-3">
+    <label asp-for="Profile" class="form-label"></label>
+    <textarea asp-for="Profile" class="form-control" rows="6"></textarea>
+    <div class="form-text">Up to 2000 characters.</div>
+    <span asp-validation-for="Profile" class="text-danger"></span>
+</div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Website" class="form-label"></label>
+        <input asp-for="Website" class="form-control" placeholder="https://" />
+        <span asp-validation-for="Website" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" />
+        <span asp-validation-for="Email" class="text-danger"></span>
+    </div>
+</div>
+<div class="mb-3">
+    <label asp-for="PhotoFile" class="form-label"></label>
+    <div class="d-flex gap-3 align-items-start">
+        <img src="@(Images.GetUrl(Model.CurrentPhotoFileName) ?? "/images/placeholder-photo.svg")" alt="Current photograph" class="rounded-circle border" width="72" height="72" />
+        <div class="flex-grow-1">
+            <input asp-for="PhotoFile" type="file" class="form-control" />
+            <div class="form-text">JPG, PNG, GIF or WEBP, up to 2 MB.</div>
+            <span asp-validation-for="PhotoFile" class="text-danger"></span>
+            @if (Model.CurrentPhotoFileName is not null)
+            {
+                <div class="form-check mt-2">
+                    <input asp-for="RemovePhoto" class="form-check-input" />
+                    <label asp-for="RemovePhoto" class="form-check-label"></label>
+                </div>
+            }
+        </div>
+    </div>
+</div>

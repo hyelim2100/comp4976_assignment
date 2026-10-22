@@ -1,0 +1,56 @@
+@model MunicipalityFormViewModel
+@{
+    var canRename = ViewData["IsSuperAdmin"] as bool? ?? true;
+}
+
+<div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+<input type="hidden" asp-for="MunicipalityId" />
+
+<div class="mb-3">
+    <label asp-for="Name" class="form-label"></label>
+    @if (canRename)
+    {
+        <input asp-for="Name" class="form-control" />
+    }
+    else
+    {
+        <input asp-for="Name" class="form-control" readonly />
+        <div class="form-text">Only a Super Admin can rename a municipality.</div>
+    }
+    <span asp-validation-for="Name" class="text-danger"></span>
+</div>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label asp-for="Province" class="form-label"></label>
+        <input asp-for="Province" class="form-control" />
+        <span asp-validation-for="Province" class="text-danger"></span>
+    </div>
+    <div class="col-md-6 mb-3">
+        <label asp-for="ElectionDate" class="form-label"></label>
+        <input asp-for="ElectionDate" class="form-control" />
+        <span asp-validation-for="ElectionDate" class="text-danger"></span>
+    </div>
+</div>
+<div class="mb-3">
+    <label asp-for="Description" class="form-label"></label>
+    <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+    <span asp-validation-for="Description" class="text-danger"></span>
+</div>
+<div class="mb-3">
+    <label asp-for="LogoFile" class="form-label"></label>
+    <div class="d-flex gap-3 align-items-start">
+        <img src="@(Images.GetUrl(Model.CurrentLogoFileName) ?? "/images/placeholder-logo.svg")" alt="Current logo" class="rounded border" width="72" height="72" />
+        <div class="flex-grow-1">
+            <input asp-for="LogoFile" type="file" class="form-control" />
+            <div class="form-text">JPG, PNG, GIF or WEBP, up to 2 MB.</div>
+            <span asp-validation-for="LogoFile" class="text-danger"></span>
+            @if (Model.CurrentLogoFileName is not null)
+            {
+                <div class="form-check mt-2">
+                    <input asp-for="RemoveLogo" class="form-check-input" />
+                    <label asp-for="RemoveLogo" class="form-check-label"></label>
+                </div>
+            }
+        </div>
+    </div>
+</div>
