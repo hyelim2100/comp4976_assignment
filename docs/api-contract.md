@@ -4,7 +4,8 @@ This is the agreement between the ASP.NET Core backend (COMP4976 / COMP4977 Part
 SwiftUI app *Municipal Elections Companion* (COMP4977 Part 2). Changes to anything here must be
 agreed by both sides first.
 
-- **Base URL (Azure):** `https://<app-name>.azurewebsites.net` — *to be filled in after the first deployment*
+- **Base URL (Azure):** `https://mems-hh-enf4drf2hmemb0as.canadacentral-01.azurewebsites.net`
+  (Free tier: the first request after a while idle can take 10–20 seconds — use a generous request timeout)
 - **Base URL (local):** `http://localhost:5099` (run with `dotnet run --urls http://localhost:5099`)
 - **Interactive docs:** `<base URL>/swagger`
 
