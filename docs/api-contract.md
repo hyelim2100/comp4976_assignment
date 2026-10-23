@@ -1,8 +1,8 @@
 # Municipal Elections Web API — Contract
 
-This is the agreement between the ASP.NET Core backend (COMP4976 / COMP4977 Part 1) and the
-SwiftUI app *Municipal Elections Companion* (COMP4977 Part 2). Changes to anything here must be
-agreed by both sides first.
+Reference for the JWT-secured REST API that this ASP.NET Core project exposes under `/api`
+as an extra feature. It reads the same SQLite database as the website, so any client
+(e.g. a mobile app) sees administrators' changes immediately.
 
 - **Base URL (Azure):** `https://mems-hh-enf4drf2hmemb0as.canadacentral-01.azurewebsites.net`
   (Free tier: the first request after a while idle can take 10–20 seconds — use a generous request timeout)

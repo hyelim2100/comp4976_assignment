@@ -492,3 +492,7 @@ MunicipalElections/wwwroot/uploads/
 
 # local only
 _spec/
+
+# Submission artifacts (D2L zip, Word document, screenshots) are kept outside the repository
+*.zip
+submission/
