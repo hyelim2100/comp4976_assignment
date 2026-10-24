@@ -27,8 +27,8 @@ Hailey Kim
 - There is no user-management screen. When a Super Admin creates a municipality, its
   "<Name> Admin" group is created automatically, but new admin users must be added in
   the seed code (Data/DbSeeder.cs).
-- Optional bonus features (pagination, PDF export, candidate comparison, Azure Blob
-  Storage) were not implemented.
+- Of the optional bonus features, only candidate comparison was implemented
+  (pagination, PDF export and Azure Blob Storage were not).
 
 
 4. MAJOR CHALLENGES
@@ -49,6 +49,9 @@ Accounts (user name / password):
   add candidates to "My Voting Guide" and print it.
 - Click "Admin Login", sign in with a user name above, then open "Admin".
 - As pm, opening a Burnaby record (e.g. /Admin/Candidates/Edit/16) is denied.
+- Bonus - candidate comparison: tick "Compare" on up to 4 candidate cards and click
+  "Compare" in the bar at the bottom, or click "Compare all" next to a position on a
+  municipality's ballot.
 - The Azure Free tier may take 10-20 seconds to respond to the first request.
 
 Running locally:

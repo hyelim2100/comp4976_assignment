@@ -1,0 +1,98 @@
+@model IReadOnlyList<Candidate>
+@{
+    ViewData["Title"] = "Compare Candidates";
+}
+
+<h1 class="h3 mb-1">Compare Candidates</h1>
+<p class="text-muted mb-4">Side-by-side view of the candidates you selected.</p>
+
+@if (Model.Count < 2)
+{
+    <div class="text-center border rounded-3 py-5 px-3">
+        <p class="lead mb-2">Select at least two candidates to compare.</p>
+        <p class="text-muted">Tick <strong>Compare</strong> on up to @MunicipalElections.Controllers.CandidatesController.MaxCompare candidate cards,
+            or use <strong>Compare all</strong> on a municipality's ballot.</p>
+        <a class="btn btn-primary" asp-action="Index">Browse candidates</a>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table align-top compare-table">
+            <thead>
+                <tr>
+                    <th scope="col"><span class="visually-hidden">Attribute</span></th>
+                    @foreach (var c in Model)
+                    {
+                        <th scope="col" class="text-center" id="candidate-@c.CandidateId">
+                            <img src="@(Images.GetUrl(c.PhotoFileName) ?? "/images/placeholder-photo.svg")" alt="Photograph of @c.Name" class="rounded-circle candidate-thumb-lg mb-2" />
+                            <div><a asp-action="Details" asp-route-id="@c.CandidateId">@c.Name</a></div>
+                        </th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <th scope="row">Position</th>
+                    @foreach (var c in Model)
+                    {
+                        <td>@c.Position!.Name <span class="text-muted small">(@c.Position.SeatsAvailable seat@(c.Position.SeatsAvailable == 1 ? "" : "s"))</span></td>
+                    }
+                </tr>
+                <tr>
+                    <th scope="row">Municipality</th>
+                    @foreach (var c in Model)
+                    {
+                        <td>@c.Position!.Municipality!.Name</td>
+                    }
+                </tr>
+                <tr>
+                    <th scope="row">Biography</th>
+                    @foreach (var c in Model)
+                    {
+                        <td class="small" style="white-space: pre-line">@(string.IsNullOrWhiteSpace(c.Profile) ? "—" : c.Profile)</td>
+                    }
+                </tr>
+                <tr>
+                    <th scope="row">Website</th>
+                    @foreach (var c in Model)
+                    {
+                        <td class="small">
+                            @if (c.Website is not null)
+                            {
+                                <a href="@c.Website" target="_blank" rel="noopener noreferrer">@c.Website</a>
+                            }
+                            else
+                            {
+                                <span>—</span>
+                            }
+                        </td>
+                    }
+                </tr>
+                <tr>
+                    <th scope="row">Email</th>
+                    @foreach (var c in Model)
+                    {
+                        <td class="small">
+                            @if (c.Email is not null)
+                            {
+                                <a href="mailto:@c.Email">@c.Email</a>
+                            }
+                            else
+                            {
+                                <span>—</span>
+                            }
+                        </td>
+                    }
+                </tr>
+                <tr>
+                    <th scope="row">My voting guide</th>
+                    @foreach (var c in Model)
+                    {
+                        <td><partial name="_GuideButton" model="c" /></td>
+                    }
+                </tr>
+            </tbody>
+        </table>
+    </div>
+}

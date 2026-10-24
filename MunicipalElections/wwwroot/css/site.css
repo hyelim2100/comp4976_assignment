@@ -87,3 +87,40 @@ html {
   font-weight: 600;
   flex-shrink: 0;
 }
+
+/* Candidate comparison */
+.compare-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1030;
+  background: var(--bs-body-bg);
+  border-top: 1px solid var(--bs-border-color);
+  box-shadow: 0 -.25rem 1rem rgba(0, 0, 0, .12);
+}
+
+.compare-table {
+  min-width: 640px;
+}
+
+.compare-table th[scope="row"] {
+  width: 9rem;
+  white-space: nowrap;
+}
+
+.compare-table td,
+.compare-table thead th {
+  min-width: 12rem;
+}
+
+.candidate-thumb-lg {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+}
+
+/* Keep the last row of content clear of the floating compare bar */
+main {
+  padding-bottom: 4.5rem !important;
+}

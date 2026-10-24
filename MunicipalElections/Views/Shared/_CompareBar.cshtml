@@ -1,0 +1,12 @@
+@* Floating bar for the candidate comparison; driven by wwwroot/js/compare.js. *@
+<div id="compare-bar" class="compare-bar d-none" data-compare-url="@Url.Action("Compare", "Candidates", new { area = "" })"
+     data-compare-max="@MunicipalElections.Controllers.CandidatesController.MaxCompare" role="region" aria-label="Candidate comparison">
+    <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2 py-2">
+        <span><strong data-compare-count>0</strong> selected to compare <span class="text-muted small">(up to @MunicipalElections.Controllers.CandidatesController.MaxCompare)</span></span>
+        <span class="d-flex gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" data-compare-clear>Clear</button>
+            <a class="btn btn-sm btn-primary" data-compare-link href="#">Compare</a>
+        </span>
+    </div>
+</div>
+<script src="~/js/compare.js" asp-append-version="true"></script>

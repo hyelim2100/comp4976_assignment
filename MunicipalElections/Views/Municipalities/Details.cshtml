@@ -40,7 +40,13 @@
     <section class="mb-5" id="position-@position.PositionId">
         <div class="d-flex flex-wrap justify-content-between align-items-baseline mb-3 border-bottom pb-2">
             <h2 class="h4 mb-0">@position.Name</h2>
-            <span class="text-muted">Vote for up to <strong>@position.SeatsAvailable</strong> · @position.Candidates.Count candidate(s)</span>
+            <span class="text-muted">
+                Vote for up to <strong>@position.SeatsAvailable</strong> · @position.Candidates.Count candidate(s)
+                @if (position.Candidates.Count >= 2)
+                {
+                    <a class="btn btn-sm btn-outline-primary ms-2" asp-controller="Candidates" asp-action="Compare" asp-route-positionId="@position.PositionId">Compare all</a>
+                }
+            </span>
         </div>
         <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
             @foreach (var candidate in position.Candidates.OrderBy(c => c.Name))
@@ -54,3 +60,5 @@
         }
     </section>
 }
+
+<partial name="_CompareBar" />

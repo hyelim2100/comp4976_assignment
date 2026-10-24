@@ -63,6 +63,27 @@ public class CandidatesController(ApplicationDbContext db) : Controller
         return View(candidate);
     }
 
+    public const int MaxCompare = 4;
+
+    // GET /Candidates/Compare?ids=1&ids=2   or   /Candidates/Compare?positionId=2 (everyone running for a position)
+    public async Task<IActionResult> Compare([FromQuery] int[] ids, int? positionId)
+    {
+        List<Candidate> candidates;
+
+        if (positionId is not null)
+        {
+            candidates = await WithPosition().Where(c => c.PositionId == positionId).OrderBy(c => c.Name).ToListAsync();
+        }
+        else
+        {
+            var wanted = ids.Distinct().Take(MaxCompare).ToList();
+            var found = await WithPosition().Where(c => wanted.Contains(c.CandidateId)).ToListAsync();
+            candidates = found.OrderBy(c => wanted.IndexOf(c.CandidateId)).ToList();
+        }
+
+        return View(candidates);
+    }
+
     private IQueryable<Candidate> WithPosition() =>
         db.Candidates.AsNoTracking().Include(c => c.Position!).ThenInclude(p => p.Municipality);
 }
