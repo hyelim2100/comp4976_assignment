@@ -45,18 +45,26 @@ public class MunicipalityService(
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    // Tenant-filtered list: all municipalities for a Super Admin, only their own for a Municipality Admin.
+    // Tenant management list: every municipality for a Super Admin (whatever tenant they are working
+    // in), only their own for a Municipality Admin.
     public async Task<IReadOnlyList<MunicipalityDto>> ListAsync(CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-        return await Project(db.Municipalities.AsNoTracking().OrderBy(m => m.Name)).ToListAsync(cancellationToken);
+        return await Project(Managed(db).AsNoTracking().OrderBy(m => m.Name)).ToListAsync(cancellationToken);
     }
 
     public async Task<MunicipalityDto?> GetAsync(int id, CancellationToken cancellationToken = default)
     {
         await using var db = await dbFactory.CreateDbContextAsync(cancellationToken);
-        return await Project(db.Municipalities.AsNoTracking().Where(m => m.Id == id)).FirstOrDefaultAsync(cancellationToken);
+        return await Project(Managed(db).AsNoTracking().Where(m => m.Id == id)).FirstOrDefaultAsync(cancellationToken);
     }
+
+    // Municipalities the caller may manage. The Super Admin role "manages all tenants", so tenant
+    // management ignores the Super Admin's selected working tenant (IgnoreQueryFilters applies to the
+    // whole query, so the position/candidate counts are complete too). Everyone else gets the tenant
+    // query filter: their own municipality only, with counts of their own rows.
+    private IQueryable<Municipality> Managed(MemsDbContext db) =>
+        tenant.IsSuperAdmin ? db.Municipalities.IgnoreQueryFilters() : db.Municipalities;
 
     // Creates a tenant and its first Municipality Admin account.
     public async Task<ServiceResult<MunicipalityDto>> CreateTenantAsync(TenantCreateInput input, ImageUpload? logo)
@@ -124,7 +132,7 @@ public class MunicipalityService(
     public async Task<ServiceResult> UpdateAsync(int id, MunicipalityInput input, ImageUpload? newLogo, bool removeLogo)
     {
         await using var db = await dbFactory.CreateDbContextAsync();
-        var municipality = await db.Municipalities.FirstOrDefaultAsync(m => m.Id == id);
+        var municipality = await Managed(db).FirstOrDefaultAsync(m => m.Id == id);
         if (municipality is null)
         {
             // Also the answer for another tenant's municipality: it is filtered out.
@@ -184,15 +192,15 @@ public class MunicipalityService(
         }
 
         await using var db = await dbFactory.CreateDbContextAsync();
-        var impact = await db.Municipalities.AsNoTracking()
+        var impact = await Managed(db).AsNoTracking()
             .Where(m => m.Id == id)
             .Select(m => new TenantDeletionImpactDto(
                 m.Id,
                 m.Name,
                 m.Slug,
-                m.Positions.Count,
-                m.Candidates.Count,
-                db.Images.Count(i => i.MunicipalityId == m.Id),
+                db.Positions.IgnoreQueryFilters().Count(p => p.MunicipalityId == m.Id),
+                db.Candidates.IgnoreQueryFilters().Count(c => c.MunicipalityId == m.Id),
+                db.Images.IgnoreQueryFilters().Count(i => i.MunicipalityId == m.Id),
                 m.Users.OrderBy(u => u.UserName).Select(u => u.UserName!).ToList()))
             .FirstOrDefaultAsync();
 
@@ -211,7 +219,7 @@ public class MunicipalityService(
         }
 
         await using var db = await dbFactory.CreateDbContextAsync();
-        if (!await db.Municipalities.AnyAsync(m => m.Id == id))
+        if (!await Managed(db).AnyAsync(m => m.Id == id))
         {
             return ServiceResult.NotFound("The municipality was not found.");
         }
@@ -228,13 +236,15 @@ public class MunicipalityService(
         {
             await using var transaction = await db.Database.BeginTransactionAsync();
 
-            await db.Candidates.Where(c => c.MunicipalityId == id).ExecuteDeleteAsync();
-            await db.Positions.Where(p => p.MunicipalityId == id).ExecuteDeleteAsync();
-            await db.Municipalities.Where(m => m.Id == id).ExecuteUpdateAsync(s => s.SetProperty(m => m.LogoImageId, (Guid?)null));
-            await db.Images.Where(i => i.MunicipalityId == id).ExecuteDeleteAsync();
+            // Only reached by a Super Admin (checked by the callers); filters are ignored so the deletion is
+            // complete whatever tenant the Super Admin is currently working in.
+            await db.Candidates.IgnoreQueryFilters().Where(c => c.MunicipalityId == id).ExecuteDeleteAsync();
+            await db.Positions.IgnoreQueryFilters().Where(p => p.MunicipalityId == id).ExecuteDeleteAsync();
+            await db.Municipalities.IgnoreQueryFilters().Where(m => m.Id == id).ExecuteUpdateAsync(s => s.SetProperty(m => m.LogoImageId, (Guid?)null));
+            await db.Images.IgnoreQueryFilters().Where(i => i.MunicipalityId == id).ExecuteDeleteAsync();
             // Identity's user roles, claims, logins and tokens cascade with the user rows.
             await db.Users.Where(u => u.MunicipalityId == id).ExecuteDeleteAsync();
-            await db.Municipalities.Where(m => m.Id == id).ExecuteDeleteAsync();
+            await db.Municipalities.IgnoreQueryFilters().Where(m => m.Id == id).ExecuteDeleteAsync();
 
             await transaction.CommitAsync();
         });
@@ -280,6 +290,8 @@ public class MunicipalityService(
         municipality.PrimaryColor = input.PrimaryColor.ToUpperInvariant();
     }
 
+    // Counts use the navigation collections; EF applies the Position/Candidate query filters to them,
+    // so a Municipality Admin only ever counts rows of their own tenant.
     private static IQueryable<MunicipalityDto> Project(IQueryable<Municipality> query) =>
         query.Select(m => new MunicipalityDto(
             m.Id, m.Name, m.Slug, m.Province, m.ElectionDate, m.Tagline, m.Description, m.PrimaryColor, m.LogoImageId,

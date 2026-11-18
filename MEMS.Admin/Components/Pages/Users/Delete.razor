@@ -1,0 +1,60 @@
+@page "/users/{Id}/delete"
+@attribute [Authorize(Roles = AppRoles.SuperAdmin)]
+@inject AdminUserService Users
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+
+<PageTitle>Delete administrator - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (current is null)
+{
+    <NotFoundCard What="Administrator" BackUrl="users" />
+}
+else
+{
+    <h1 class="h3 text-danger">Delete @current.UserName?</h1>
+    <PageMessage Text="@pageError" />
+    <div class="card border-danger">
+        <div class="card-body">
+            <p>@current.Role@(current.MunicipalityName is null ? "" : $" of {current.MunicipalityName}"). The account is removed and
+                any open session is signed out within a minute.</p>
+            <div class="d-flex gap-2">
+                <button class="btn btn-danger" disabled="@deleting" @onclick="DeleteAsync">Delete administrator</button>
+                <a class="btn btn-outline-secondary" href="users">Cancel</a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+
+    private AdminUserDto? current;
+    private string? pageError;
+    private bool loading = true;
+    private bool deleting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        current = (await Users.GetAsync(Id)).Value;
+        loading = false;
+    }
+
+    private async Task DeleteAsync()
+    {
+        deleting = true;
+        var me = (await AuthState.GetAuthenticationStateAsync()).User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var result = await Users.DeleteAsync(Id, me);
+        deleting = false;
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo("users");
+            return;
+        }
+        pageError = result.Message;
+    }
+}

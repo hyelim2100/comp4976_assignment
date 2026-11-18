@@ -1,0 +1,36 @@
+@page "/positions/create"
+@inject PositionService Positions
+@inject NavigationManager Navigation
+
+<PageTitle>Add position - MEMS Admin</PageTitle>
+
+<h1 class="h3">Add position</h1>
+<PageMessage Text="@pageError" />
+<PositionForm Model="model" EditContext="editContext" OnValidSubmit="SaveAsync" Saving="saving" SubmitText="Add position" />
+
+@code {
+    private readonly PositionInput model = new();
+    private EditContext editContext = default!;
+    private FormErrors errors = default!;
+    private string? pageError;
+    private bool saving;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(model);
+        errors = new FormErrors(editContext);
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        var result = await Positions.CreateAsync(model);
+        saving = false;
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo($"positions/{result.Value!.Id}");
+            return;
+        }
+        pageError = errors.Apply(result);
+    }
+}

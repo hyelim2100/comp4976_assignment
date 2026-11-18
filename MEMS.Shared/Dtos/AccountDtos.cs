@@ -64,22 +64,11 @@ public class AdminUserCreateInput : AdminUserAssignmentInput
 
     [DataType(DataType.Password)]
     [Display(Name = "Confirm password")]
+    [Compare(nameof(Password), ErrorMessage = "The passwords do not match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
-
-    public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        foreach (var result in base.Validate(validationContext))
-        {
-            yield return result;
-        }
-        if (Password != ConfirmPassword)
-        {
-            yield return new ValidationResult("The passwords do not match.", [nameof(ConfirmPassword)]);
-        }
-    }
 }
 
-public class ResetPasswordInput : IValidatableObject
+public class ResetPasswordInput
 {
     [Required]
     [StringLength(100, MinimumLength = FieldLengths.MinPasswordLength)]
@@ -89,15 +78,8 @@ public class ResetPasswordInput : IValidatableObject
 
     [DataType(DataType.Password)]
     [Display(Name = "Confirm password")]
+    [Compare(nameof(NewPassword), ErrorMessage = "The passwords do not match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
-
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        if (NewPassword != ConfirmPassword)
-        {
-            yield return new ValidationResult("The passwords do not match.", [nameof(ConfirmPassword)]);
-        }
-    }
 }
 
 // API login (JWT).

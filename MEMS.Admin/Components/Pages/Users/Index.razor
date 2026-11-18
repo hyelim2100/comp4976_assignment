@@ -1,0 +1,62 @@
+@page "/users"
+@attribute [Authorize(Roles = AppRoles.SuperAdmin)]
+@inject AdminUserService Users
+
+<PageTitle>Administrators - MEMS Admin</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Administrators</h1>
+    <a class="btn btn-primary" href="users/create">Add administrator</a>
+</div>
+<p class="text-secondary small">A Municipality Admin belongs to exactly one municipality; a Super Admin manages all of them.</p>
+
+<PageMessage Text="@pageError" />
+
+@if (items is null)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="user-table">
+            <thead>
+                <tr>
+                    <th scope="col">User name</th>
+                    <th scope="col">Role</th>
+                    <th scope="col">Municipality</th>
+                    <th scope="col" class="d-none d-md-table-cell">Email</th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in items)
+                {
+                    <tr>
+                        <td>@u.UserName</td>
+                        <td><span class="badge @(u.Role == AppRoles.SuperAdmin ? "text-bg-dark" : "text-bg-primary")">@u.Role</span></td>
+                        <td>@(u.MunicipalityName ?? "All")</td>
+                        <td class="d-none d-md-table-cell">@u.Email</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-primary" href="users/@u.Id/edit">Edit / assign</a>
+                            <a class="btn btn-sm btn-outline-secondary" href="users/@u.Id/reset-password">Reset password</a>
+                            <a class="btn btn-sm btn-outline-danger" href="users/@u.Id/delete">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<AdminUserDto>? items;
+    private string? pageError;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Users.ListAsync();
+        items = result.Value ?? [];
+        pageError = result.Succeeded ? null : result.Message;
+    }
+}

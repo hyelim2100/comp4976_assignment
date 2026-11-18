@@ -1,0 +1,39 @@
+@page "/candidates/create"
+@inject CandidateService Candidates
+@inject NavigationManager Navigation
+
+<PageTitle>Add candidate - MEMS Admin</PageTitle>
+
+<h1 class="h3">Add candidate</h1>
+<PageMessage Text="@pageError" />
+<CandidateForm Model="model" EditContext="editContext" OnValidSubmit="SaveAsync" Saving="saving" SubmitText="Add candidate" />
+
+@code {
+    [SupplyParameterFromQuery] public int? PositionId { get; set; }
+
+    private readonly CandidateInput model = new();
+    private EditContext editContext = default!;
+    private FormErrors errors = default!;
+    private string? pageError;
+    private bool saving;
+
+    protected override void OnInitialized()
+    {
+        model.PositionId = PositionId;
+        editContext = new EditContext(model);
+        errors = new FormErrors(editContext);
+    }
+
+    private async Task SaveAsync((ImageUpload? Photo, bool RemovePhoto) args)
+    {
+        saving = true;
+        var result = await Candidates.CreateAsync(model, args.Photo);
+        saving = false;
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo($"candidates/{result.Value!.Id}");
+            return;
+        }
+        pageError = errors.Apply(result);
+    }
+}

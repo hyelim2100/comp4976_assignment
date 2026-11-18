@@ -1,0 +1,63 @@
+@page "/positions/{Id:int}/delete"
+@inject PositionService Positions
+@inject NavigationManager Navigation
+
+<PageTitle>Delete position - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (item is null)
+{
+    <NotFoundCard What="Position" BackUrl="positions" />
+}
+else
+{
+    <h1 class="h3 text-danger">Delete @item.Name (@item.MunicipalityName)?</h1>
+    <PageMessage Text="@pageError" />
+    <div class="card border-danger">
+        <div class="card-body">
+            @if (item.CandidateCount > 0)
+            {
+                <p>This position has <strong>@item.CandidateCount candidate(s)</strong>. They and their photos will be deleted too.</p>
+            }
+            else
+            {
+                <p>This position has no candidates.</p>
+            }
+            <div class="d-flex gap-2">
+                <button class="btn btn-danger" disabled="@deleting" @onclick="DeleteAsync">Delete position</button>
+                <a class="btn btn-outline-secondary" href="positions/@Id">Cancel</a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PositionDto? item;
+    private string? pageError;
+    private bool loading = true;
+    private bool deleting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        item = await Positions.GetAsync(Id);
+        loading = false;
+    }
+
+    private async Task DeleteAsync()
+    {
+        deleting = true;
+        var result = await Positions.DeleteAsync(Id);
+        deleting = false;
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo("positions");
+            return;
+        }
+        pageError = result.Message;
+    }
+}

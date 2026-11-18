@@ -1,0 +1,81 @@
+@page "/municipalities/{Id:int}/delete"
+@attribute [Authorize(Roles = AppRoles.SuperAdmin)]
+@inject MunicipalityService Municipalities
+@inject AdminSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Delete municipality - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (impact is null)
+{
+    <NotFoundCard What="Municipality" BackUrl="municipalities" />
+}
+else
+{
+    <h1 class="h3 text-danger">Delete @impact.Name?</h1>
+    <PageMessage Text="@pageError" />
+
+    <div class="card border-danger mb-3">
+        <div class="card-body">
+            <p>Deleting this tenant permanently removes <strong>everything</strong> that belongs to it. Its public site
+                <code>/@impact.Slug</code> will no longer exist.</p>
+            <ul class="list-group mb-3" id="deletion-impact">
+                <li class="list-group-item d-flex justify-content-between">Positions <span class="badge text-bg-danger">@impact.PositionCount</span></li>
+                <li class="list-group-item d-flex justify-content-between">Candidates <span class="badge text-bg-danger">@impact.CandidateCount</span></li>
+                <li class="list-group-item d-flex justify-content-between">Images (logo and photos) <span class="badge text-bg-danger">@impact.ImageCount</span></li>
+                <li class="list-group-item">
+                    <div class="d-flex justify-content-between">Administrator accounts <span class="badge text-bg-danger">@impact.AdminUserNames.Count</span></div>
+                    @if (impact.AdminUserNames.Count > 0)
+                    {
+                        <div class="small text-secondary mt-1">Deleted and signed out: @string.Join(", ", impact.AdminUserNames)</div>
+                    }
+                </li>
+            </ul>
+            <div class="form-check mb-3">
+                <input class="form-check-input" type="checkbox" id="confirm-delete" @bind="confirmed" />
+                <label class="form-check-label" for="confirm-delete">I understand that this cannot be undone.</label>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-danger" disabled="@(!confirmed || deleting)" @onclick="DeleteAsync">@(deleting ? "Deleting..." : "Delete municipality")</button>
+                <a class="btn btn-outline-secondary" href="municipalities/@Id">Cancel</a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private TenantDeletionImpactDto? impact;
+    private string? pageError;
+    private bool loading = true;
+    private bool confirmed;
+    private bool deleting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Municipalities.GetDeletionImpactAsync(Id);
+        impact = result.Value;
+        loading = false;
+    }
+
+    private async Task DeleteAsync()
+    {
+        deleting = true;
+        var result = await Municipalities.DeleteAsync(Id);
+        deleting = false;
+        if (!result.Succeeded)
+        {
+            pageError = result.Message;
+            return;
+        }
+
+        // If the Super Admin was working inside the deleted tenant, return to "All municipalities".
+        Navigation.NavigateTo(Session.WorkingMunicipalityId == Id ? "select-tenant?municipalityId=0&returnUrl=municipalities" : "municipalities",
+            forceLoad: Session.WorkingMunicipalityId == Id);
+    }
+}

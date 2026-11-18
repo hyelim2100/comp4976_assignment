@@ -1,0 +1,79 @@
+@page "/users/{Id}/edit"
+@attribute [Authorize(Roles = AppRoles.SuperAdmin)]
+@inject AdminUserService Users
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Navigation
+
+<PageTitle>Edit administrator - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (current is null)
+{
+    <NotFoundCard What="Administrator" BackUrl="users" />
+}
+else
+{
+    <h1 class="h3">Edit @current.UserName</h1>
+    <p class="text-secondary small">Changing the role or municipality signs this administrator out of every open session within a minute.</p>
+    <PageMessage Text="@pageError" />
+    <EditForm EditContext="editContext" OnValidSubmit="SaveAsync" FormName="edit-user">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="alert alert-danger" />
+        <div class="card mb-4">
+            <div class="card-body row g-3">
+                <div class="col-12 col-md-6">
+                    <label class="form-label" for="u-email">Email</label>
+                    <InputText id="u-email" type="email" class="form-control" @bind-Value="model.Email" />
+                    <ValidationMessage For="() => model.Email" class="text-danger" />
+                </div>
+                <div class="w-100"></div>
+                <AssignmentFields Model="model" />
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@saving">Save</button>
+            <a class="btn btn-outline-secondary" href="users">Cancel</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public string Id { get; set; } = "";
+
+    private AdminUserDto? current;
+    private AdminUserAssignmentInput model = new();
+    private EditContext editContext = default!;
+    private FormErrors errors = default!;
+    private string? pageError;
+    private bool loading = true;
+    private bool saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        current = (await Users.GetAsync(Id)).Value;
+        if (current is not null)
+        {
+            model = new AdminUserAssignmentInput { Email = current.Email ?? "", Role = current.Role, MunicipalityId = current.MunicipalityId };
+        }
+        editContext = new EditContext(model);
+        errors = new FormErrors(editContext);
+        loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        var me = (await AuthState.GetAuthenticationStateAsync()).User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        var result = await Users.UpdateAssignmentAsync(Id, model, me);
+        saving = false;
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo("users");
+            return;
+        }
+        pageError = errors.Apply(result);
+    }
+}

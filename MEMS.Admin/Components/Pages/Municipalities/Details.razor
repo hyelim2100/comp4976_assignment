@@ -1,0 +1,76 @@
+@page "/municipalities/{Id:int}"
+@inject MunicipalityService Municipalities
+@inject AdminSession Session
+
+<PageTitle>@(item?.Name ?? "Municipality") - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (item is null)
+{
+    <NotFoundCard What="Municipality" BackUrl="municipalities" />
+}
+else
+{
+    @if (Created)
+    {
+        <PageMessage Success="true" Text="The municipality and its administrator account were created." />
+    }
+    @if (Saved)
+    {
+        <PageMessage Success="true" Text="The municipality was saved." />
+    }
+    <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+        <ImageThumb ImageId="item.LogoImageId" Size="88" Alt="@($"{item.Name} logo")" />
+        <div>
+            <h1 class="h3 mb-1">@item.Name</h1>
+            <div class="text-secondary">@item.Tagline</div>
+        </div>
+    </div>
+
+    <dl class="row">
+        <dt class="col-sm-3">Tenant slug</dt>
+        <dd class="col-sm-9"><code>/@item.Slug</code></dd>
+        <dt class="col-sm-3">Province</dt>
+        <dd class="col-sm-9">@item.Province</dd>
+        <dt class="col-sm-3">Election date</dt>
+        <dd class="col-sm-9">@item.ElectionDate.ToString("dddd, MMMM d, yyyy")</dd>
+        <dt class="col-sm-3">Primary colour</dt>
+        <dd class="col-sm-9"><span class="d-inline-block rounded me-2 align-middle border" style="width:1.5rem;height:1.5rem;background:@item.PrimaryColor"></span>@item.PrimaryColor</dd>
+        <dt class="col-sm-3">Positions</dt>
+        <dd class="col-sm-9">@item.PositionCount</dd>
+        <dt class="col-sm-3">Candidates</dt>
+        <dd class="col-sm-9">@item.CandidateCount</dd>
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9" style="white-space: pre-line;">@(item.Description ?? "-")</dd>
+    </dl>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="municipalities/@item.Id/edit">Edit</a>
+        @if (Session.IsSuperAdmin)
+        {
+            <a class="btn btn-outline-danger" href="municipalities/@item.Id/delete">Delete</a>
+        }
+        <a class="btn btn-outline-secondary" href="municipalities">Back to list</a>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    [SupplyParameterFromQuery(Name = "created")] public int? CreatedFlag { get; set; }
+    [SupplyParameterFromQuery(Name = "saved")] public int? SavedFlag { get; set; }
+
+    private MunicipalityDto? item;
+    private bool loading = true;
+    private bool Created => CreatedFlag == 1;
+    private bool Saved => SavedFlag == 1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        item = await Municipalities.GetAsync(Id);
+        loading = false;
+    }
+}

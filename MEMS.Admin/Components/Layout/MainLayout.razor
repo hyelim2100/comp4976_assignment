@@ -6,18 +6,38 @@
     </div>
 
     <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+        <div class="top-row px-3 gap-2">
+            <TenantSwitcher />
         </div>
 
-        <article class="content px-4">
-            @Body
+        <article class="content px-3 px-md-4 py-3">
+            @* Unexpected errors inside a page show a friendly message instead of breaking the circuit. *@
+            <ErrorBoundary @ref="errorBoundary">
+                <ChildContent>
+                    @Body
+                </ChildContent>
+                <ErrorContent>
+                    <div class="alert alert-danger" role="alert">
+                        <h1 class="h5">Something went wrong</h1>
+                        <p>The action could not be completed. The error has been logged.</p>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="Recover">Try again</button>
+                    </div>
+                </ErrorContent>
+            </ErrorBoundary>
         </article>
     </main>
 </div>
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
+    An unexpected error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private ErrorBoundary? errorBoundary;
+
+    protected override void OnParametersSet() => errorBoundary?.Recover();
+
+    private void Recover() => errorBoundary?.Recover();
+}

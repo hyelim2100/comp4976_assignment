@@ -1,0 +1,47 @@
+@inject AdminSession Session
+
+@* Role + municipality. Choosing "Super Admin" clears and hides the municipality; choosing
+   "Municipality Admin" requires one (AdminAccountRules, checked again by the service). *@
+<div class="col-12 col-md-6">
+    <label class="form-label" for="u-role">Role</label>
+    <InputSelect id="u-role" class="form-select" @bind-Value="Model.Role" @bind-Value:after="OnRoleChanged">
+        <option value="@AppRoles.MunicipalityAdmin">Municipality Admin</option>
+        <option value="@AppRoles.SuperAdmin">Super Admin</option>
+    </InputSelect>
+    <ValidationMessage For="() => Model.Role" class="text-danger" />
+</div>
+<div class="col-12 col-md-6">
+    <label class="form-label" for="u-municipality">Municipality</label>
+    @if (Model.Role == AppRoles.SuperAdmin)
+    {
+        <input id="u-municipality" class="form-control" value="All municipalities" readonly />
+        <div class="form-text">A Super Admin is not assigned to a municipality.</div>
+    }
+    else
+    {
+        <InputSelect id="u-municipality" class="form-select" @bind-Value="Model.MunicipalityId">
+            <option value="">-- Choose a municipality --</option>
+            @foreach (var m in municipalities)
+            {
+                <option value="@m.Id">@m.Name</option>
+            }
+        </InputSelect>
+    }
+    <ValidationMessage For="() => Model.MunicipalityId" class="text-danger" />
+</div>
+
+@code {
+    [Parameter, EditorRequired] public AdminUserAssignmentInput Model { get; set; } = default!;
+
+    private IReadOnlyList<MunicipalitySummaryDto> municipalities = [];
+
+    protected override async Task OnInitializedAsync() => municipalities = await Session.GetMunicipalityChoicesAsync();
+
+    private void OnRoleChanged()
+    {
+        if (Model.Role == AppRoles.SuperAdmin)
+        {
+            Model.MunicipalityId = null;
+        }
+    }
+}

@@ -1,0 +1,63 @@
+@page "/candidates/{Id:int}/edit"
+@inject CandidateService Candidates
+@inject NavigationManager Navigation
+
+<PageTitle>Edit candidate - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (current is null)
+{
+    <NotFoundCard What="Candidate" BackUrl="candidates" />
+}
+else
+{
+    <h1 class="h3">Edit @current.Name</h1>
+    <p class="text-secondary">@current.MunicipalityName</p>
+    <PageMessage Text="@pageError" />
+    <CandidateForm Model="model" EditContext="editContext" OnValidSubmit="SaveAsync" Saving="saving"
+                   CurrentPhotoId="current.PhotoImageId" RestrictToMunicipalityId="current.MunicipalityId"
+                   CancelUrl="@($"candidates/{Id}")" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private CandidateDto? current;
+    private CandidateInput model = new();
+    private EditContext editContext = default!;
+    private FormErrors errors = default!;
+    private string? pageError;
+    private bool loading = true;
+    private bool saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        current = await Candidates.GetAsync(Id);
+        if (current is not null)
+        {
+            model = new CandidateInput
+            {
+                Name = current.Name, Profile = current.Profile, Website = current.Website, Email = current.Email, PositionId = current.PositionId,
+            };
+        }
+        editContext = new EditContext(model);
+        errors = new FormErrors(editContext);
+        loading = false;
+    }
+
+    private async Task SaveAsync((ImageUpload? Photo, bool RemovePhoto) args)
+    {
+        saving = true;
+        var result = await Candidates.UpdateAsync(Id, model, args.Photo, args.RemovePhoto);
+        saving = false;
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo($"candidates/{Id}");
+            return;
+        }
+        pageError = errors.Apply(result);
+    }
+}

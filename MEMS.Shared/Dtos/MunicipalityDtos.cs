@@ -71,7 +71,7 @@ public class MunicipalityInput
 }
 
 // Creating a tenant also creates its first Municipality Admin account (A1 deficiency #3).
-public class TenantCreateInput : MunicipalityInput, IValidatableObject
+public class TenantCreateInput : MunicipalityInput
 {
     [Required]
     [StringLength(FieldLengths.UserName, MinimumLength = 3)]
@@ -93,13 +93,6 @@ public class TenantCreateInput : MunicipalityInput, IValidatableObject
 
     [DataType(DataType.Password)]
     [Display(Name = "Confirm password")]
+    [Compare(nameof(AdminPassword), ErrorMessage = "The passwords do not match.")]
     public string ConfirmAdminPassword { get; set; } = string.Empty;
-
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
-    {
-        if (AdminPassword != ConfirmAdminPassword)
-        {
-            yield return new ValidationResult("The passwords do not match.", [nameof(ConfirmAdminPassword)]);
-        }
-    }
 }

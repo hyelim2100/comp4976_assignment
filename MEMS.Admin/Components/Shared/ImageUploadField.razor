@@ -1,0 +1,71 @@
+@using MEMS.Data.Services
+@using MEMS.Shared.Validation
+
+@* Logo / photo picker. Validates in the browser session (extension, size, real image signature)
+   before the form is submitted; the service validates again before saving. *@
+<div class="mb-3">
+    <label class="form-label" for="@InputId">@Label</label>
+    <div class="d-flex align-items-start gap-3 flex-wrap">
+        <ImageThumb ImageId="@(remove ? null : CurrentImageId)" PreviewDataUrl="@previewUrl" Size="96" Alt="@Label" />
+        <div class="flex-grow-1" style="min-width: 220px;">
+            <InputFile id="@InputId" class="@($"form-control {(error is null ? "" : "is-invalid")}")" accept="@ImageRules.AcceptAttribute" OnChange="OnFileSelected" />
+            <div class="form-text">@ImageRules.Description. The file must be a real image.</div>
+            @if (error is not null)
+            {
+                <div class="invalid-feedback d-block">@error</div>
+            }
+            @if (CurrentImageId is not null && upload is null)
+            {
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="@($"{InputId}-remove")" checked="@remove" @onchange="OnRemoveChanged" />
+                    <label class="form-check-label" for="@($"{InputId}-remove")">Remove current image</label>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "Image";
+    [Parameter] public string InputId { get; set; } = "image-upload";
+    [Parameter] public Guid? CurrentImageId { get; set; }
+
+    // Raised with the validated upload (or null when the selection is cleared / invalid).
+    [Parameter] public EventCallback<ImageUpload?> UploadChanged { get; set; }
+    [Parameter] public EventCallback<bool> RemoveChanged { get; set; }
+
+    private ImageUpload? upload;
+    private string? previewUrl;
+    private string? error;
+    private bool remove;
+
+    public bool HasError => error is not null;
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        upload = null;
+        previewUrl = null;
+        error = ImageRules.ValidateMetadata(e.File.Name, e.File.Size);
+        if (error is null)
+        {
+            using var buffer = new MemoryStream();
+            await e.File.OpenReadStream(ImageRules.MaxBytes).CopyToAsync(buffer);
+            var bytes = buffer.ToArray();
+            error = ImageRules.Validate(e.File.Name, bytes);
+            if (error is null)
+            {
+                upload = new ImageUpload(e.File.Name, bytes);
+                previewUrl = $"data:{ImageRules.ContentTypeFor(e.File.Name)};base64,{Convert.ToBase64String(bytes)}";
+                remove = false;
+                await RemoveChanged.InvokeAsync(false);
+            }
+        }
+        await UploadChanged.InvokeAsync(upload);
+    }
+
+    private async Task OnRemoveChanged(ChangeEventArgs e)
+    {
+        remove = e.Value is true;
+        await RemoveChanged.InvokeAsync(remove);
+    }
+}

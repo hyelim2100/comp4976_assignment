@@ -1,0 +1,59 @@
+@page "/candidates/{Id:int}/delete"
+@inject CandidateService Candidates
+@inject NavigationManager Navigation
+
+<PageTitle>Delete candidate - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (item is null)
+{
+    <NotFoundCard What="Candidate" BackUrl="candidates" />
+}
+else
+{
+    <h1 class="h3 text-danger">Delete @item.Name?</h1>
+    <PageMessage Text="@pageError" />
+    <div class="card border-danger">
+        <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+            <ImageThumb ImageId="item.PhotoImageId" Size="64" Alt="@item.Name" />
+            <div class="flex-grow-1">
+                <p class="mb-2">@item.PositionName, @item.MunicipalityName. The candidate and their photo will be deleted.</p>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-danger" disabled="@deleting" @onclick="DeleteAsync">Delete candidate</button>
+                    <a class="btn btn-outline-secondary" href="candidates/@Id">Cancel</a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private CandidateDto? item;
+    private string? pageError;
+    private bool loading = true;
+    private bool deleting;
+
+    protected override async Task OnInitializedAsync()
+    {
+        item = await Candidates.GetAsync(Id);
+        loading = false;
+    }
+
+    private async Task DeleteAsync()
+    {
+        deleting = true;
+        var result = await Candidates.DeleteAsync(Id);
+        deleting = false;
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo("candidates");
+            return;
+        }
+        pageError = result.Message;
+    }
+}

@@ -1,0 +1,82 @@
+@page "/positions"
+@inject PositionService Positions
+@inject AdminSession Session
+
+<PageTitle>Positions - MEMS Admin</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Positions</h1>
+    <a class="btn btn-primary" href="positions/create">Add position</a>
+</div>
+
+@if (Session.CanChooseMunicipality)
+{
+    <div class="row g-2 mb-3">
+        <div class="col-12 col-sm-6 col-md-4">
+            <label class="form-label small" for="filter-municipality">Municipality</label>
+            <select id="filter-municipality" class="form-select" @bind="municipalityFilter" @bind:after="LoadAsync">
+                <option value="0">All municipalities</option>
+                @foreach (var m in municipalities)
+                {
+                    <option value="@m.Id">@m.Name</option>
+                }
+            </select>
+        </div>
+    </div>
+}
+
+@if (items is null)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (items.Count == 0)
+{
+    <p>No positions yet. <a href="positions/create">Add the first one.</a></p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="position-table">
+            <thead>
+                <tr>
+                    <th scope="col">Position</th>
+                    <th scope="col">Municipality</th>
+                    <th scope="col" class="text-end">Seats</th>
+                    <th scope="col" class="text-end">Candidates</th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var p in items)
+                {
+                    <tr>
+                        <td><a href="positions/@p.Id">@p.Name</a></td>
+                        <td class="municipality-cell">@p.MunicipalityName</td>
+                        <td class="text-end">@p.SeatsAvailable</td>
+                        <td class="text-end">@p.CandidateCount</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" href="positions/@p.Id">Details</a>
+                            <a class="btn btn-sm btn-outline-primary" href="positions/@p.Id/edit">Edit</a>
+                            <a class="btn btn-sm btn-outline-danger" href="positions/@p.Id/delete">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<PositionDto>? items;
+    private IReadOnlyList<MunicipalitySummaryDto> municipalities = [];
+    private int municipalityFilter;
+
+    protected override async Task OnInitializedAsync()
+    {
+        municipalities = await Session.GetMunicipalityChoicesAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() =>
+        items = await Positions.ListAsync(municipalityFilter > 0 ? municipalityFilter : null);
+}

@@ -1,0 +1,14 @@
+@* Shown when an id does not exist in the administrator's tenant. Items of other municipalities are
+   reported exactly like missing ones, so nothing about them is revealed. *@
+<div class="card border-warning">
+    <div class="card-body">
+        <h2 class="h5 card-title">@What not found</h2>
+        <p class="card-text text-secondary mb-3">It does not exist or it belongs to a municipality you cannot manage.</p>
+        <a class="btn btn-outline-secondary" href="@BackUrl">Back to the list</a>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string What { get; set; } = "Item";
+    [Parameter, EditorRequired] public string BackUrl { get; set; } = "";
+}

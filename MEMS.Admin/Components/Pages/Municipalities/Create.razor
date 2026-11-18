@@ -1,0 +1,93 @@
+@page "/municipalities/create"
+@attribute [Authorize(Roles = AppRoles.SuperAdmin)]
+@inject MunicipalityService Municipalities
+@inject NavigationManager Navigation
+
+<PageTitle>Create municipality - MEMS Admin</PageTitle>
+
+<h1 class="h3">Create municipality</h1>
+<p class="text-secondary">A new tenant gets its public site at <code>/slug</code> immediately - no new application is needed.
+    Its first Municipality Admin account is created at the same time.</p>
+
+<PageMessage Text="@pageError" />
+
+<EditForm EditContext="editContext" OnValidSubmit="SaveAsync" FormName="create-municipality">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="alert alert-danger" />
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0">Municipality (tenant)</legend>
+        <div class="card-body">
+            <MunicipalityFields Model="model" SuggestSlugFromName="true" />
+            <div class="mt-3">
+                <ImageUploadField Label="Logo" InputId="logo" UploadChanged="u => logo = u" />
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="card mb-4">
+        <legend class="card-header h6 mb-0">Municipality Admin account</legend>
+        <div class="card-body row g-3">
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="admin-user">User name</label>
+                <InputText id="admin-user" class="form-control" @bind-Value="model.AdminUserName" autocomplete="off" />
+                <ValidationMessage For="() => model.AdminUserName" class="text-danger" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="admin-email">Email</label>
+                <InputText id="admin-email" type="email" class="form-control" @bind-Value="model.AdminEmail" />
+                <ValidationMessage For="() => model.AdminEmail" class="text-danger" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="admin-password">Password</label>
+                <InputText id="admin-password" type="password" class="form-control" @bind-Value="model.AdminPassword" autocomplete="new-password" />
+                <div class="form-text">At least 8 characters with upper and lower case letters, a digit and a symbol.</div>
+                <ValidationMessage For="() => model.AdminPassword" class="text-danger" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="admin-confirm">Confirm password</label>
+                <InputText id="admin-confirm" type="password" class="form-control" @bind-Value="model.ConfirmAdminPassword" autocomplete="new-password" />
+                <ValidationMessage For="() => model.ConfirmAdminPassword" class="text-danger" />
+            </div>
+        </div>
+    </fieldset>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@saving">@(saving ? "Creating..." : "Create municipality")</button>
+        <a class="btn btn-outline-secondary" href="municipalities">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    private readonly TenantCreateInput model = new() { ElectionDate = new DateOnly(2026, 10, 17) };
+    private EditContext editContext = default!;
+    private FormErrors errors = default!;
+    private ImageUpload? logo;
+    private string? pageError;
+    private bool saving;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(model);
+        errors = new FormErrors(editContext);
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        try
+        {
+            var result = await Municipalities.CreateTenantAsync(model, logo);
+            if (result.Succeeded)
+            {
+                Navigation.NavigateTo($"municipalities/{result.Value!.Id}?created=1");
+                return;
+            }
+            pageError = errors.Apply(result);
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+}

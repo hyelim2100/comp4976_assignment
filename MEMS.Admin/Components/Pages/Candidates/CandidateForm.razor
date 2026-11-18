@@ -1,0 +1,80 @@
+@inject PositionService Positions
+@inject AdminSession Session
+
+@* Create/edit form. The position dropdown only contains positions of the working tenant (the query
+   filter guarantees it); the candidate's municipality always follows the chosen position. *@
+<EditForm EditContext="EditContext" OnValidSubmit="Submit" FormName="candidate-form">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="alert alert-danger" />
+    <div class="card mb-4">
+        <div class="card-body row g-3">
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="c-name">Name</label>
+                <InputText id="c-name" class="form-control" @bind-Value="Model.Name" />
+                <ValidationMessage For="() => Model.Name" class="text-danger" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="c-position">Position</label>
+                <InputSelect id="c-position" class="form-select" @bind-Value="Model.PositionId">
+                    <option value="">-- Choose a position --</option>
+                    @foreach (var group in AvailablePositions.GroupBy(p => p.MunicipalityName))
+                    {
+                        <optgroup label="@group.Key">
+                            @foreach (var p in group)
+                            {
+                                <option value="@p.Id">@p.Name (@p.SeatsAvailable seat@(p.SeatsAvailable == 1 ? "" : "s"))</option>
+                            }
+                        </optgroup>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => Model.PositionId" class="text-danger" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="c-email">Email</label>
+                <InputText id="c-email" type="email" class="form-control" @bind-Value="Model.Email" />
+                <ValidationMessage For="() => Model.Email" class="text-danger" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="c-website">Website</label>
+                <InputText id="c-website" type="url" class="form-control" @bind-Value="Model.Website" placeholder="https://" />
+                <ValidationMessage For="() => Model.Website" class="text-danger" />
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="c-profile">Biography</label>
+                <InputTextArea id="c-profile" class="form-control" rows="5" @bind-Value="Model.Profile" />
+                <ValidationMessage For="() => Model.Profile" class="text-danger" />
+            </div>
+            <div class="col-12">
+                <ImageUploadField Label="Photo" InputId="photo" CurrentImageId="CurrentPhotoId"
+                                  UploadChanged="u => Photo = u" RemoveChanged="r => RemovePhoto = r" />
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@Saving">@(Saving ? "Saving..." : SubmitText)</button>
+        <a class="btn btn-outline-secondary" href="@CancelUrl">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public CandidateInput Model { get; set; } = default!;
+    [Parameter, EditorRequired] public EditContext EditContext { get; set; } = default!;
+    [Parameter, EditorRequired] public EventCallback<(ImageUpload? Photo, bool RemovePhoto)> OnValidSubmit { get; set; }
+    [Parameter] public Guid? CurrentPhotoId { get; set; }
+    // Edit: a candidate can only move between positions of its own municipality.
+    [Parameter] public int? RestrictToMunicipalityId { get; set; }
+    [Parameter] public bool Saving { get; set; }
+    [Parameter] public string SubmitText { get; set; } = "Save";
+    [Parameter] public string CancelUrl { get; set; } = "candidates";
+
+    private IReadOnlyList<PositionDto> positions = [];
+    private ImageUpload? Photo { get; set; }
+    private bool RemovePhoto { get; set; }
+
+    private IEnumerable<PositionDto> AvailablePositions =>
+        RestrictToMunicipalityId is int id ? positions.Where(p => p.MunicipalityId == id) : positions;
+
+    protected override async Task OnInitializedAsync() => positions = await Positions.ListAsync();
+
+    private Task Submit() => OnValidSubmit.InvokeAsync((Photo, RemovePhoto));
+}

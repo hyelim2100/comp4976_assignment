@@ -1,0 +1,12 @@
+@* Page-level notice: errors (forbidden / not found) or success messages. *@
+@if (!string.IsNullOrEmpty(Text))
+{
+    <div class="alert @(Success ? "alert-success" : "alert-danger") d-flex justify-content-between align-items-start" role="alert">
+        <span>@Text</span>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Text { get; set; }
+    [Parameter] public bool Success { get; set; }
+}

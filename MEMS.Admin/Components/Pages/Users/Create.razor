@@ -1,0 +1,71 @@
+@page "/users/create"
+@attribute [Authorize(Roles = AppRoles.SuperAdmin)]
+@inject AdminUserService Users
+@inject NavigationManager Navigation
+
+<PageTitle>Add administrator - MEMS Admin</PageTitle>
+
+<h1 class="h3">Add administrator</h1>
+<PageMessage Text="@pageError" />
+
+<EditForm EditContext="editContext" OnValidSubmit="SaveAsync" FormName="create-user">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="alert alert-danger" />
+    <div class="card mb-4">
+        <div class="card-body row g-3">
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="u-name">User name</label>
+                <InputText id="u-name" class="form-control" @bind-Value="model.UserName" autocomplete="off" />
+                <ValidationMessage For="() => model.UserName" class="text-danger" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="u-email">Email</label>
+                <InputText id="u-email" type="email" class="form-control" @bind-Value="model.Email" />
+                <ValidationMessage For="() => model.Email" class="text-danger" />
+            </div>
+            <AssignmentFields Model="model" />
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="u-password">Password</label>
+                <InputText id="u-password" type="password" class="form-control" @bind-Value="model.Password" autocomplete="new-password" />
+                <div class="form-text">At least 8 characters with upper and lower case letters, a digit and a symbol.</div>
+                <ValidationMessage For="() => model.Password" class="text-danger" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="u-confirm">Confirm password</label>
+                <InputText id="u-confirm" type="password" class="form-control" @bind-Value="model.ConfirmPassword" autocomplete="new-password" />
+                <ValidationMessage For="() => model.ConfirmPassword" class="text-danger" />
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@saving">Add administrator</button>
+        <a class="btn btn-outline-secondary" href="users">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    private readonly AdminUserCreateInput model = new();
+    private EditContext editContext = default!;
+    private FormErrors errors = default!;
+    private string? pageError;
+    private bool saving;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(model);
+        errors = new FormErrors(editContext);
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        var result = await Users.CreateAsync(model);
+        saving = false;
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo("users");
+            return;
+        }
+        pageError = errors.Apply(result);
+    }
+}

@@ -8,15 +8,18 @@ using MEMS.Data.Entities;
 
 namespace MEMS.Admin.Components.Account;
 
-// This is a server-side AuthenticationStateProvider that revalidates the security stamp for the connected user
-// every 30 minutes an interactive circuit is connected.
+// Server-side AuthenticationStateProvider that re-validates the signed-in administrator of every open
+// Blazor Server circuit every minute. Circuits live for a long time, so without this an administrator
+// who was deleted, re-assigned to another tenant, had their role changed or their password reset would
+// keep working in an already open page. All those changes update the security stamp (or delete the
+// user); the check then fails, the circuit becomes anonymous and the page redirects to the login.
 internal sealed class IdentityRevalidatingAuthenticationStateProvider(
         ILoggerFactory loggerFactory,
         IServiceScopeFactory scopeFactory,
         IOptions<IdentityOptions> options)
     : RevalidatingServerAuthenticationStateProvider(loggerFactory)
 {
-    protected override TimeSpan RevalidationInterval => TimeSpan.FromMinutes(30);
+    protected override TimeSpan RevalidationInterval => TimeSpan.FromMinutes(1);
 
     protected override async Task<bool> ValidateAuthenticationStateAsync(
         AuthenticationState authenticationState, CancellationToken cancellationToken)

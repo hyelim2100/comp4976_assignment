@@ -1,0 +1,75 @@
+@page "/municipalities"
+@inject MunicipalityService Municipalities
+@inject AdminSession Session
+
+<PageTitle>Municipalities - MEMS Admin</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Municipalities</h1>
+    @if (Session.IsSuperAdmin)
+    {
+        <a class="btn btn-primary" href="municipalities/create">Create municipality</a>
+    }
+</div>
+@if (Session.IsSuperAdmin)
+{
+    <p class="text-secondary small">As Super Admin you manage every tenant. Use "Work here" to limit positions and candidates to one municipality.</p>
+}
+
+@if (items is null)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (items.Count == 0)
+{
+    <p>No municipalities yet.</p>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="municipality-table">
+            <thead>
+                <tr>
+                    <th scope="col">Logo</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Slug</th>
+                    <th scope="col" class="d-none d-md-table-cell">Election date</th>
+                    <th scope="col" class="text-end">Positions</th>
+                    <th scope="col" class="text-end">Candidates</th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var m in items)
+                {
+                    <tr>
+                        <td><ImageThumb ImageId="m.LogoImageId" Size="40" Alt="@($"{m.Name} logo")" /></td>
+                        <td>
+                            <span class="d-inline-block rounded-circle me-1 align-middle" style="width:.75rem;height:.75rem;background:@m.PrimaryColor"></span>
+                            <a href="municipalities/@m.Id">@m.Name</a>
+                        </td>
+                        <td><code>/@m.Slug</code></td>
+                        <td class="d-none d-md-table-cell">@m.ElectionDate.ToString("MMM d, yyyy")</td>
+                        <td class="text-end">@m.PositionCount</td>
+                        <td class="text-end">@m.CandidateCount</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" href="municipalities/@m.Id">Details</a>
+                            <a class="btn btn-sm btn-outline-primary" href="municipalities/@m.Id/edit">Edit</a>
+                            @if (Session.IsSuperAdmin)
+                            {
+                                <a class="btn btn-sm btn-outline-dark" href="@($"select-tenant?municipalityId={m.Id}&returnUrl=positions")" target="_top">Work here</a>
+                                <a class="btn btn-sm btn-outline-danger" href="municipalities/@m.Id/delete">Delete</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<MunicipalityDto>? items;
+
+    protected override async Task OnInitializedAsync() => items = await Municipalities.ListAsync();
+}

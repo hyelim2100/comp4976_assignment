@@ -27,7 +27,7 @@ public class AdminUserService(
         }
 
         await using var db = await dbFactory.CreateDbContextAsync();
-        var users = await QueryUsers(db).OrderBy(u => u.MunicipalityName).ThenBy(u => u.UserName).ToListAsync();
+        var users = await QueryUsers(db, id: null).ToListAsync();
         return users;
     }
 
@@ -39,7 +39,7 @@ public class AdminUserService(
         }
 
         await using var db = await dbFactory.CreateDbContextAsync();
-        var user = await QueryUsers(db).FirstOrDefaultAsync(u => u.Id == id);
+        var user = await QueryUsers(db, id).FirstOrDefaultAsync();
         return user is null ? ServiceResult<AdminUserDto>.From(ServiceResult.NotFound("The administrator was not found.")) : user;
     }
 
@@ -280,8 +280,14 @@ public class AdminUserService(
     private async Task<bool> IsLastSuperAdminAsync(ApplicationUser user) =>
         (await userManager.GetUsersInRoleAsync(AppRoles.SuperAdmin)).All(u => u.Id == user.Id);
 
-    private static IQueryable<AdminUserDto> QueryUsers(MemsDbContext db) =>
-        from u in db.Users.AsNoTracking()
+    // Filtering and ordering happen on the entity, before the projection into the DTO record:
+    // SQL Server cannot translate a Where/OrderBy on members of a constructor-projected record.
+    private static IQueryable<AdminUserDto> QueryUsers(MemsDbContext db, string? id) =>
+        // Super Admin only: ignore the tenant filters so every account shows its municipality name,
+        // whatever tenant the Super Admin is currently working in.
+        from u in db.Users.IgnoreQueryFilters().AsNoTracking()
+        where id == null || u.Id == id
+        orderby u.Municipality == null ? "" : u.Municipality.Name, u.UserName
         let roleName = (from ur in db.UserRoles
                         join r in db.Roles on ur.RoleId equals r.Id
                         where ur.UserId == u.Id
@@ -293,6 +299,7 @@ public class AdminUserService(
             roleName ?? "(none)",
             u.MunicipalityId,
             u.Municipality != null ? u.Municipality.Name : null);
+
 
     private static ServiceResult ToResult(IdentityResult result, string? passwordField = null)
     {

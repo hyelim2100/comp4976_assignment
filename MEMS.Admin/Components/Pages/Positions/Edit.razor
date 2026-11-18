@@ -1,0 +1,58 @@
+@page "/positions/{Id:int}/edit"
+@inject PositionService Positions
+@inject NavigationManager Navigation
+
+<PageTitle>Edit position - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (current is null)
+{
+    <NotFoundCard What="Position" BackUrl="positions" />
+}
+else
+{
+    <h1 class="h3">Edit @current.Name</h1>
+    <PageMessage Text="@pageError" />
+    <PositionForm Model="model" EditContext="editContext" OnValidSubmit="SaveAsync" Saving="saving" IsEdit="true"
+                  MunicipalityName="@current.MunicipalityName" CancelUrl="@($"positions/{Id}")" />
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PositionDto? current;
+    private PositionInput model = new();
+    private EditContext editContext = default!;
+    private FormErrors errors = default!;
+    private string? pageError;
+    private bool loading = true;
+    private bool saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        current = await Positions.GetAsync(Id);
+        if (current is not null)
+        {
+            model = new PositionInput { Name = current.Name, Description = current.Description, SeatsAvailable = current.SeatsAvailable };
+        }
+        editContext = new EditContext(model);
+        errors = new FormErrors(editContext);
+        loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        var result = await Positions.UpdateAsync(Id, model);
+        saving = false;
+        if (result.Succeeded)
+        {
+            Navigation.NavigateTo($"positions/{Id}");
+            return;
+        }
+        pageError = errors.Apply(result);
+    }
+}

@@ -1,0 +1,59 @@
+@page "/candidates/{Id:int}"
+@inject CandidateService Candidates
+
+<PageTitle>@(item?.Name ?? "Candidate") - MEMS Admin</PageTitle>
+
+@* Admin view of a candidate: details only. There is deliberately no "add to voting guide" here -
+   the voting guide is a feature of the public site, kept in the voter's browser session. *@
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (item is null)
+{
+    <NotFoundCard What="Candidate" BackUrl="candidates" />
+}
+else
+{
+    <div class="row g-4">
+        <div class="col-12 col-md-4 col-lg-3">
+            <ImageThumb ImageId="item.PhotoImageId" Size="220" Alt="@item.Name" />
+        </div>
+        <div class="col-12 col-md-8 col-lg-9">
+            <h1 class="h3 mb-1">@item.Name</h1>
+            <p class="text-secondary">@item.PositionName, @item.MunicipalityName</p>
+            <dl class="row">
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">@(item.Email is null ? "-" : item.Email)</dd>
+                <dt class="col-sm-3">Website</dt>
+                <dd class="col-sm-9">
+                    @if (item.Website is null) { <span>-</span> }
+                    else { <a href="@item.Website" target="_blank" rel="noopener noreferrer">@item.Website</a> }
+                </dd>
+                <dt class="col-sm-3">Biography</dt>
+                <dd class="col-sm-9" style="white-space: pre-line;">@(item.Profile ?? "-")</dd>
+                <dt class="col-sm-3">Added</dt>
+                <dd class="col-sm-9">@item.DateCreated.ToLocalTime().ToString("MMM d, yyyy")</dd>
+            </dl>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" href="candidates/@item.Id/edit">Edit</a>
+                <a class="btn btn-outline-danger" href="candidates/@item.Id/delete">Delete</a>
+                <a class="btn btn-outline-secondary" href="candidates">Back to list</a>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private CandidateDto? item;
+    private bool loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        item = await Candidates.GetAsync(Id);
+        loading = false;
+    }
+}

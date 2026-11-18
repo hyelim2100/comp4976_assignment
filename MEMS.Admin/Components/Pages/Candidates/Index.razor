@@ -1,0 +1,115 @@
+@page "/candidates"
+@inject CandidateService Candidates
+@inject PositionService Positions
+@inject AdminSession Session
+
+<PageTitle>Candidates - MEMS Admin</PageTitle>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <h1 class="h3 mb-0">Candidates</h1>
+    <a class="btn btn-primary" href="candidates/create">Add candidate</a>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-12 col-md-4">
+        <label class="form-label small" for="search">Search by name</label>
+        <input id="search" class="form-control" type="search" placeholder="Name..." @bind="search" @bind:event="oninput" @bind:after="LoadAsync" />
+    </div>
+    @if (Session.CanChooseMunicipality)
+    {
+        <div class="col-12 col-sm-6 col-md-4">
+            <label class="form-label small" for="filter-municipality">Municipality</label>
+            <select id="filter-municipality" class="form-select" @bind="municipalityFilter" @bind:after="OnMunicipalityChangedAsync">
+                <option value="0">All municipalities</option>
+                @foreach (var m in municipalities)
+                {
+                    <option value="@m.Id">@m.Name</option>
+                }
+            </select>
+        </div>
+    }
+    <div class="col-12 col-sm-6 col-md-4">
+        <label class="form-label small" for="filter-position">Position</label>
+        <select id="filter-position" class="form-select" @bind="positionFilter" @bind:after="LoadAsync">
+            <option value="0">All positions</option>
+            @foreach (var p in VisiblePositions)
+            {
+                <option value="@p.Id">@PositionLabel(p)</option>
+            }
+        </select>
+    </div>
+</div>
+
+@if (items is null)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (items.Count == 0)
+{
+    <p>No candidates match.</p>
+}
+else
+{
+    <p class="small text-secondary">@items.Count candidate(s)</p>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="candidate-table">
+            <thead>
+                <tr>
+                    <th scope="col">Photo</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Position</th>
+                    <th scope="col">Municipality</th>
+                    <th scope="col"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var c in items)
+                {
+                    <tr>
+                        <td><ImageThumb ImageId="c.PhotoImageId" Size="40" Alt="@c.Name" /></td>
+                        <td><a href="candidates/@c.Id">@c.Name</a></td>
+                        <td>@c.PositionName</td>
+                        <td class="municipality-cell">@c.MunicipalityName</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" href="candidates/@c.Id">Details</a>
+                            <a class="btn btn-sm btn-outline-primary" href="candidates/@c.Id/edit">Edit</a>
+                            <a class="btn btn-sm btn-outline-danger" href="candidates/@c.Id/delete">Delete</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    private IReadOnlyList<CandidateDto>? items;
+    private IReadOnlyList<PositionDto> positions = [];
+    private IReadOnlyList<MunicipalitySummaryDto> municipalities = [];
+    private string? search;
+    private int positionFilter;
+    private int municipalityFilter;
+
+    private IEnumerable<PositionDto> VisiblePositions =>
+        municipalityFilter > 0 ? positions.Where(p => p.MunicipalityId == municipalityFilter) : positions;
+
+    private string PositionLabel(PositionDto p) => Session.CanChooseMunicipality && municipalityFilter == 0 ? $"{p.MunicipalityName} - {p.Name}" : p.Name;
+
+    protected override async Task OnInitializedAsync()
+    {
+        municipalities = await Session.GetMunicipalityChoicesAsync();
+        positions = await Positions.ListAsync();
+        await LoadAsync();
+    }
+
+    private async Task OnMunicipalityChangedAsync()
+    {
+        positionFilter = 0;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync() =>
+        items = await Candidates.ListAsync(
+            new CandidateQuery(search, positionFilter > 0 ? positionFilter : null),
+            municipalityFilter > 0 ? municipalityFilter : null);
+}

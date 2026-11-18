@@ -1,0 +1,87 @@
+@page "/municipalities/{Id:int}/edit"
+@inject MunicipalityService Municipalities
+@inject AdminSession Session
+@inject NavigationManager Navigation
+
+<PageTitle>Edit municipality - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (current is null)
+{
+    <NotFoundCard What="Municipality" BackUrl="municipalities" />
+}
+else
+{
+    <h1 class="h3">Edit @current.Name</h1>
+    <PageMessage Text="@pageError" />
+
+    <EditForm EditContext="editContext" OnValidSubmit="SaveAsync" FormName="edit-municipality">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="alert alert-danger" />
+        <div class="card mb-4">
+            <div class="card-body">
+                <MunicipalityFields Model="model" SlugReadOnly="@(!Session.IsSuperAdmin)" />
+                <div class="mt-3">
+                    <ImageUploadField Label="Logo" InputId="logo" CurrentImageId="current.LogoImageId"
+                                      UploadChanged="u => logo = u" RemoveChanged="r => removeLogo = r" />
+                </div>
+            </div>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary" disabled="@saving">@(saving ? "Saving..." : "Save")</button>
+            <a class="btn btn-outline-secondary" href="municipalities/@Id">Cancel</a>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private MunicipalityDto? current;
+    private MunicipalityInput model = new();
+    private EditContext editContext = default!;
+    private FormErrors errors = default!;
+    private ImageUpload? logo;
+    private bool removeLogo;
+    private string? pageError;
+    private bool loading = true;
+    private bool saving;
+
+    protected override async Task OnInitializedAsync()
+    {
+        current = await Municipalities.GetAsync(Id);
+        if (current is not null)
+        {
+            model = new MunicipalityInput
+            {
+                Name = current.Name, Slug = current.Slug, Province = current.Province, ElectionDate = current.ElectionDate,
+                Tagline = current.Tagline, Description = current.Description, PrimaryColor = current.PrimaryColor,
+            };
+        }
+        editContext = new EditContext(model);
+        errors = new FormErrors(editContext);
+        loading = false;
+    }
+
+    private async Task SaveAsync()
+    {
+        saving = true;
+        try
+        {
+            var result = await Municipalities.UpdateAsync(Id, model, logo, removeLogo);
+            if (result.Succeeded)
+            {
+                Navigation.NavigateTo($"municipalities/{Id}?saved=1");
+                return;
+            }
+            pageError = errors.Apply(result);
+        }
+        finally
+        {
+            saving = false;
+        }
+    }
+}

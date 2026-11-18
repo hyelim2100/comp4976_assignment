@@ -1,0 +1,74 @@
+@inject AdminSession Session
+
+@* Create/edit form. The municipality is only selectable by a Super Admin in "All municipalities"
+   mode; everyone else works in a fixed tenant, which the service enforces anyway. *@
+<EditForm EditContext="EditContext" OnValidSubmit="OnValidSubmit" FormName="position-form">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="alert alert-danger" />
+    <div class="card mb-4">
+        <div class="card-body row g-3">
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="p-municipality">Municipality</label>
+                @if (Session.CanChooseMunicipality && !IsEdit)
+                {
+                    <InputSelect id="p-municipality" class="form-select" @bind-Value="Model.MunicipalityId">
+                        <option value="">-- Choose a municipality --</option>
+                        @foreach (var m in municipalities)
+                        {
+                            <option value="@m.Id">@m.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => Model.MunicipalityId" class="text-danger" />
+                }
+                else
+                {
+                    <input id="p-municipality" class="form-control" value="@FixedMunicipalityName" readonly />
+                    <div class="form-text">@(IsEdit ? "A position stays in its municipality." : "Positions are created in your working municipality.")</div>
+                }
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="p-name">Name</label>
+                <InputText id="p-name" class="form-control" @bind-Value="Model.Name" placeholder="e.g. Mayor, Councillor, School Trustee" />
+                <ValidationMessage For="() => Model.Name" class="text-danger" />
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label" for="p-seats">Seats available</label>
+                <InputNumber id="p-seats" class="form-control" @bind-Value="Model.SeatsAvailable" min="1" max="100" />
+                <div class="form-text">Voters can choose at most this many candidates for the position.</div>
+                <ValidationMessage For="() => Model.SeatsAvailable" class="text-danger" />
+            </div>
+            <div class="col-12">
+                <label class="form-label" for="p-description">Description</label>
+                <InputTextArea id="p-description" class="form-control" rows="3" @bind-Value="Model.Description" />
+                <ValidationMessage For="() => Model.Description" class="text-danger" />
+            </div>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary" disabled="@Saving">@(Saving ? "Saving..." : SubmitText)</button>
+        <a class="btn btn-outline-secondary" href="@CancelUrl">Cancel</a>
+    </div>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public PositionInput Model { get; set; } = default!;
+    [Parameter, EditorRequired] public EditContext EditContext { get; set; } = default!;
+    [Parameter, EditorRequired] public EventCallback OnValidSubmit { get; set; }
+    [Parameter] public bool IsEdit { get; set; }
+    [Parameter] public bool Saving { get; set; }
+    [Parameter] public string SubmitText { get; set; } = "Save";
+    [Parameter] public string CancelUrl { get; set; } = "positions";
+    // Edit: the position's own municipality name.
+    [Parameter] public string? MunicipalityName { get; set; }
+
+    private IReadOnlyList<MunicipalitySummaryDto> municipalities = [];
+    private string scopeName = "";
+
+    private string FixedMunicipalityName => MunicipalityName ?? scopeName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        municipalities = await Session.GetMunicipalityChoicesAsync();
+        scopeName = await Session.GetScopeNameAsync();
+    }
+}

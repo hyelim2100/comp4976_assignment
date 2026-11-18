@@ -1,7 +1,63 @@
 ﻿@page "/"
+@inject DashboardService Dashboard
+@inject AdminSession Session
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Dashboard - MEMS Admin</PageTitle>
 
-<h1>Hello, world!</h1>
+<h1 class="h3 mb-1">Dashboard</h1>
+<p class="text-secondary mb-4">Totals for <strong id="dashboard-scope">@scopeName</strong>.</p>
 
-Welcome to your new app.
+@if (totals is null)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else
+{
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <a class="card text-decoration-none h-100 shadow-sm" href="municipalities">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase">Municipalities</div>
+                    <div class="display-6" id="total-municipalities">@totals.MunicipalityCount</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-md-4">
+            <a class="card text-decoration-none h-100 shadow-sm" href="positions">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase">Positions</div>
+                    <div class="display-6" id="total-positions">@totals.PositionCount</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-md-4">
+            <a class="card text-decoration-none h-100 shadow-sm" href="candidates">
+                <div class="card-body">
+                    <div class="text-secondary small text-uppercase">Candidates</div>
+                    <div class="display-6" id="total-candidates">@totals.CandidateCount</div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-primary" href="positions/create">Add position</a>
+        <a class="btn btn-outline-primary" href="candidates/create">Add candidate</a>
+        @if (Session.IsSuperAdmin)
+        {
+            <a class="btn btn-outline-dark" href="municipalities/create">Create municipality</a>
+            <a class="btn btn-outline-dark" href="users">Manage administrators</a>
+        }
+    </div>
+}
+
+@code {
+    private DashboardDto? totals;
+    private string scopeName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        scopeName = await Session.GetScopeNameAsync();
+        totals = await Dashboard.GetAsync();
+    }
+}

@@ -1,0 +1,51 @@
+@inject AdminSession Session
+@inject NavigationManager Navigation
+
+@* Super Admin: choose "All municipalities" or one working tenant. Municipality Admin: fixed badge.
+   A plain GET form so it also works on static pages; the endpoint re-issues the sign-in cookie and
+   reloads the page in the chosen tenant. *@
+<AuthorizeView Roles="@AppRoles.SuperAdmin">
+    <Authorized>
+        <form method="get" action="select-tenant" class="d-flex align-items-center gap-2 ms-auto" data-enhance="false">
+            <label for="working-tenant" class="small text-secondary text-nowrap d-none d-sm-inline">Working in</label>
+            <select id="working-tenant" name="municipalityId" class="form-select form-select-sm" style="max-width: 15rem;"
+                    onchange="this.form.submit()" aria-label="Working municipality">
+                <option value="0" selected="@(Session.WorkingMunicipalityId is null)">All municipalities</option>
+                @foreach (var m in choices)
+                {
+                    <option value="@m.Id" selected="@(Session.WorkingMunicipalityId == m.Id)">@m.Name</option>
+                }
+            </select>
+            <input type="hidden" name="returnUrl" value="@ReturnUrl" />
+            <noscript><button type="submit" class="btn btn-sm btn-outline-primary">Switch</button></noscript>
+            <span class="badge text-bg-dark">Super Admin</span>
+        </form>
+    </Authorized>
+    <NotAuthorized>
+        <AuthorizeView Roles="@AppRoles.MunicipalityAdmin" Context="adminContext">
+            <span class="ms-auto small text-secondary">Municipality:</span>
+            <span class="badge text-bg-primary" id="tenant-badge">@scopeName</span>
+        </AuthorizeView>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    private IReadOnlyList<MunicipalitySummaryDto> choices = [];
+    private string scopeName = "";
+
+    // Detail pages of one item go back to their list after a tenant switch.
+    private string ReturnUrl
+    {
+        get
+        {
+            var first = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].Split('/')[0];
+            return first is "municipalities" or "positions" or "candidates" or "users" ? first : "";
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        choices = await Session.GetMunicipalityChoicesAsync();
+        scopeName = await Session.GetScopeNameAsync();
+    }
+}

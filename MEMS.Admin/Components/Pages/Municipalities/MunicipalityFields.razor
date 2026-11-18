@@ -1,0 +1,71 @@
+@* Shared fields of the create and edit forms. The slug is normalized to lowercase as it is typed. *@
+<div class="row g-3">
+    <div class="col-12 col-md-6">
+        <label class="form-label" for="m-name">Name</label>
+        <InputText id="m-name" class="form-control" @bind-Value="Model.Name" @bind-Value:after="OnNameChanged" />
+        <ValidationMessage For="() => Model.Name" class="text-danger" />
+    </div>
+    <div class="col-12 col-md-6">
+        <label class="form-label" for="m-slug">Tenant slug (URL segment)</label>
+        <div class="input-group">
+            <span class="input-group-text">/</span>
+            <InputText id="m-slug" class="form-control" @bind-Value="Model.Slug" @bind-Value:after="NormalizeSlug"
+                       readonly="@SlugReadOnly" autocapitalize="none" spellcheck="false" />
+        </div>
+        <div class="form-text">
+            @if (SlugReadOnly)
+            {
+                <span>Only a Super Admin can change the slug.</span>
+            }
+            else
+            {
+                <span>Lowercase letters, numbers and hyphens. Public site: <code>/@(string.IsNullOrEmpty(Model.Slug) ? "slug" : Model.Slug)</code></span>
+            }
+        </div>
+        <ValidationMessage For="() => Model.Slug" class="text-danger" />
+    </div>
+    <div class="col-12 col-md-6">
+        <label class="form-label" for="m-province">Province</label>
+        <InputText id="m-province" class="form-control" @bind-Value="Model.Province" />
+        <ValidationMessage For="() => Model.Province" class="text-danger" />
+    </div>
+    <div class="col-12 col-md-6">
+        <label class="form-label" for="m-date">Election date</label>
+        <InputDate id="m-date" class="form-control" @bind-Value="Model.ElectionDate" />
+        <ValidationMessage For="() => Model.ElectionDate" class="text-danger" />
+    </div>
+    <div class="col-12 col-md-8">
+        <label class="form-label" for="m-tagline">Tagline (public home page)</label>
+        <InputText id="m-tagline" class="form-control" @bind-Value="Model.Tagline" />
+        <ValidationMessage For="() => Model.Tagline" class="text-danger" />
+    </div>
+    <div class="col-12 col-md-4">
+        <label class="form-label" for="m-color">Primary colour</label>
+        <div class="input-group">
+            <InputText id="m-color-picker" type="color" class="form-control form-control-color" @bind-Value="Model.PrimaryColor" title="Pick a colour" />
+            <InputText id="m-color" class="form-control" @bind-Value="Model.PrimaryColor" />
+        </div>
+        <ValidationMessage For="() => Model.PrimaryColor" class="text-danger" />
+    </div>
+    <div class="col-12">
+        <label class="form-label" for="m-description">Description</label>
+        <InputTextArea id="m-description" class="form-control" rows="4" @bind-Value="Model.Description" />
+        <ValidationMessage For="() => Model.Description" class="text-danger" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public MunicipalityInput Model { get; set; } = default!;
+    [Parameter] public bool SlugReadOnly { get; set; }
+    [Parameter] public bool SuggestSlugFromName { get; set; }
+
+    private void NormalizeSlug() => Model.Slug = SlugRules.Normalize(Model.Slug).Replace(' ', '-');
+
+    private void OnNameChanged()
+    {
+        if (SuggestSlugFromName && string.IsNullOrWhiteSpace(Model.Slug))
+        {
+            Model.Slug = SlugRules.FromName(Model.Name);
+        }
+    }
+}

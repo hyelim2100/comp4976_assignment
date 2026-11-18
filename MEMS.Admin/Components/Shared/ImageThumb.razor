@@ -1,0 +1,24 @@
+@* Shows a stored image (served by /admin/images/{id}), a local preview, or a neutral placeholder. *@
+@if (PreviewDataUrl is not null)
+{
+    <img src="@PreviewDataUrl" alt="@Alt" class="rounded border bg-white" style="@Style" />
+}
+else if (ImageId is Guid id)
+{
+    <img src="@($"images/{id}")" alt="@Alt" class="rounded border bg-white" style="@Style" loading="lazy" />
+}
+else
+{
+    <div class="rounded border bg-light text-secondary d-flex align-items-center justify-content-center" style="@Style" aria-label="No image">
+        <span class="small">No image</span>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid? ImageId { get; set; }
+    [Parameter] public string? PreviewDataUrl { get; set; }
+    [Parameter] public int Size { get; set; } = 48;
+    [Parameter] public string Alt { get; set; } = "";
+
+    private string Style => $"width:{Size}px;height:{Size}px;object-fit:cover;flex-shrink:0;";
+}

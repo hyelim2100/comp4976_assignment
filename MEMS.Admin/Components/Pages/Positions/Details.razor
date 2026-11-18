@@ -1,0 +1,68 @@
+@page "/positions/{Id:int}"
+@inject PositionService Positions
+@inject CandidateService Candidates
+
+<PageTitle>@(item?.Name ?? "Position") - MEMS Admin</PageTitle>
+
+@if (loading)
+{
+    <p class="text-secondary">Loading...</p>
+}
+else if (item is null)
+{
+    <NotFoundCard What="Position" BackUrl="positions" />
+}
+else
+{
+    <h1 class="h3">@item.Name</h1>
+    <p class="text-secondary">@item.MunicipalityName</p>
+
+    <dl class="row">
+        <dt class="col-sm-3">Seats available</dt>
+        <dd class="col-sm-9">@item.SeatsAvailable</dd>
+        <dt class="col-sm-3">Description</dt>
+        <dd class="col-sm-9">@(item.Description ?? "-")</dd>
+        <dt class="col-sm-3">Candidates</dt>
+        <dd class="col-sm-9">
+            @if (candidates.Count == 0)
+            {
+                <span>-</span>
+            }
+            else
+            {
+                <ul class="list-unstyled mb-0">
+                    @foreach (var c in candidates)
+                    {
+                        <li><a href="candidates/@c.Id">@c.Name</a></li>
+                    }
+                </ul>
+            }
+        </dd>
+    </dl>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-primary" href="positions/@item.Id/edit">Edit</a>
+        <a class="btn btn-outline-primary" href="candidates/create?positionId=@item.Id">Add candidate</a>
+        <a class="btn btn-outline-danger" href="positions/@item.Id/delete">Delete</a>
+        <a class="btn btn-outline-secondary" href="positions">Back to list</a>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private PositionDto? item;
+    private IReadOnlyList<CandidateDto> candidates = [];
+    private bool loading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        loading = true;
+        item = await Positions.GetAsync(Id);
+        if (item is not null)
+        {
+            candidates = await Candidates.ListAsync(new CandidateQuery(PositionId: Id));
+        }
+        loading = false;
+    }
+}
