@@ -47,6 +47,14 @@ public sealed class TestHost : IAsyncDisposable
         return scope;
     }
 
+    // Super Admin calling a tenant route such as /api/burnaby/...
+    public AsyncServiceScope SuperAdminScope(int municipalityId)
+    {
+        var scope = Root.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<TenantContext>().SetSuperAdmin(municipalityId);
+        return scope;
+    }
+
     public AsyncServiceScope TenantScope(int municipalityId)
     {
         var scope = Root.CreateAsyncScope();

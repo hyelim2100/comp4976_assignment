@@ -5,15 +5,23 @@ namespace MEMS.Data.Tenancy;
 
 // The tenant the current scope (HTTP request, Blazor circuit or background job) works in.
 // MemsDbContext reads it in its global query filters, so every EF query is tenant-filtered.
+//
+// Two separate questions:
+//   IsSuperAdmin    - who is acting (may manage every tenant: create/delete tenants, users, slugs)
+//   MunicipalityId  - which tenant's data this scope reads and writes
+// Query filters are bypassed only when a Super Admin works with no tenant selected (Admin app
+// "all municipalities" views). A Super Admin calling /api/burnaby/... is scoped to Burnaby only.
 public interface ITenantContext
 {
-    // True for a Super Admin (or the seeder): query filters are bypassed.
     bool IsSuperAdmin { get; }
 
-    // The active tenant; null when no tenant is set.
+    // The tenant whose data this scope sees; null = none (or all, for an unscoped Super Admin).
     int? MunicipalityId { get; }
 
     bool IsResolved { get; }
+
+    // True only for a Super Admin without a tenant scope: query filters are off.
+    bool SeesAllTenants => IsSuperAdmin && MunicipalityId is null;
 }
 
 // Registered as a scoped service: one instance per request / circuit.
@@ -31,8 +39,18 @@ public sealed class TenantContext : ITenantContext
 
     public bool IsResolved { get; private set; }
 
+    // Super Admin working across all tenants (Admin app lists, seeding).
     public void SetSuperAdmin() => Set(superAdmin: true, municipalityId: null);
 
+    // Super Admin working inside one tenant (e.g. API route /api/{tenant}/...): data is limited to
+    // that tenant, but Super-Admin-only operations stay allowed.
+    public void SetSuperAdmin(int municipalityId)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(municipalityId);
+        Set(superAdmin: true, municipalityId);
+    }
+
+    // Municipality Admin or anonymous public visitor of one tenant.
     public void SetMunicipality(int municipalityId)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(municipalityId);
@@ -52,15 +70,21 @@ public sealed class TenantContext : ITenantContext
             SetSuperAdmin();
             return true;
         }
-        if (user.IsInRole(AppRoles.MunicipalityAdmin)
-            && int.TryParse(user.FindFirstValue(MemsClaimTypes.MunicipalityId), out var municipalityId)
-            && municipalityId > 0)
+        if (GetUserMunicipalityId(user) is int municipalityId)
         {
             SetMunicipality(municipalityId);
             return true;
         }
         return false;
     }
+
+    // The tenant a Municipality Admin belongs to (from the municipality_id claim), or null.
+    public static int? GetUserMunicipalityId(ClaimsPrincipal user) =>
+        user.IsInRole(AppRoles.MunicipalityAdmin)
+        && int.TryParse(user.FindFirstValue(MemsClaimTypes.MunicipalityId), out var id)
+        && id > 0
+            ? id
+            : null;
 
     private void Set(bool superAdmin, int? municipalityId)
     {

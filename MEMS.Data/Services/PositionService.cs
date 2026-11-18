@@ -68,7 +68,7 @@ public class PositionService(
         }
 
         // A position stays in its tenant (its candidates are tied to it by the composite key).
-        if (tenant.IsSuperAdmin && input.MunicipalityId is int target && target != position.MunicipalityId)
+        if (tenant.SeesAllTenants && input.MunicipalityId is int target && target != position.MunicipalityId)
         {
             return ServiceResult.Invalid(nameof(input.MunicipalityId), "A position cannot be moved to another municipality.");
         }
@@ -111,10 +111,15 @@ public class PositionService(
         return ServiceResult.Ok();
     }
 
-    // Super Admin chooses the municipality; a Municipality Admin always writes to their own tenant.
+    // A scope bound to a tenant (Municipality Admin, or any caller of /api/{tenant}/...) always writes to
+    // that tenant, whatever the input says. Only an unscoped Super Admin chooses the municipality.
     private int ResolveTargetMunicipality(int? requested, out ServiceResult? failure)
     {
         failure = null;
+        if (tenant.MunicipalityId is int scoped)
+        {
+            return scoped;
+        }
         if (tenant.IsSuperAdmin)
         {
             if (requested is int id and > 0)
@@ -123,10 +128,6 @@ public class PositionService(
             }
             failure = ServiceResult.Invalid(nameof(PositionInput.MunicipalityId), "Please choose a municipality.");
             return 0;
-        }
-        if (tenant.MunicipalityId is int own)
-        {
-            return own;
         }
         failure = ServiceResult.Forbidden();
         return 0;

@@ -247,7 +247,7 @@ public class AdminUserService(
         if (municipalityId is int id)
         {
             await using var db = await dbFactory.CreateDbContextAsync();
-            if (!await db.Municipalities.AnyAsync(m => m.Id == id))
+            if (!await db.Municipalities.IgnoreQueryFilters().AnyAsync(m => m.Id == id))
             {
                 return ServiceResult.Invalid(nameof(AdminUserAssignmentInput.MunicipalityId), "The selected municipality does not exist.");
             }

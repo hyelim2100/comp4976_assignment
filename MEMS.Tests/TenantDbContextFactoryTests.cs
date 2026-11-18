@@ -79,6 +79,18 @@ public class TenantDbContextFactoryTests
     }
 
     [Fact]
+    public async Task Super_admin_scoped_to_a_tenant_sees_only_that_tenant()
+    {
+        await using var host = await TestHost.CreateAsync();
+        await using var scope = host.SuperAdminScope(host.BurnabyId);
+        await using var db = await scope.ServiceProvider.GetRequiredService<IDbContextFactory<MemsDbContext>>().CreateDbContextAsync();
+
+        Assert.True(db.Tenant.IsSuperAdmin);
+        Assert.Equal([host.BurnabyId], await db.Municipalities.Select(m => m.Id).ToListAsync());
+        Assert.All(await db.Candidates.ToListAsync(), c => Assert.Equal(host.BurnabyId, c.MunicipalityId));
+    }
+
+    [Fact]
     public void Tenant_context_cannot_be_switched_to_another_tenant_once_set()
     {
         var tenant = new TenantContext();

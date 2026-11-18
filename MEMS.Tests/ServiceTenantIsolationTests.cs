@@ -55,6 +55,19 @@ public class ServiceTenantIsolationTests
     }
 
     [Fact]
+    public async Task Scoped_super_admin_writes_go_to_the_route_tenant()
+    {
+        await using var host = await TestHost.CreateAsync();
+        await using var scope = host.SuperAdminScope(host.SurreyId);
+
+        var result = await scope.ServiceProvider.GetRequiredService<PositionService>()
+            .CreateAsync(new PositionInput { Name = "School Trustee", SeatsAvailable = 6, MunicipalityId = host.BurnabyId });
+
+        Assert.True(result.Succeeded);
+        Assert.Equal(host.SurreyId, result.Value!.MunicipalityId);
+    }
+
+    [Fact]
     public async Task Candidate_cannot_be_attached_to_another_tenants_position()
     {
         await using var host = await TestHost.CreateAsync();

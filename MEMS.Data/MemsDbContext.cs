@@ -25,7 +25,8 @@ public class MemsDbContext(DbContextOptions<MemsDbContext> options, ITenantConte
     public ITenantContext Tenant => tenant;
 
     // Evaluated per query (EF parameterizes members of the context instance used in filters).
-    private bool BypassTenantFilter => tenant.IsSuperAdmin;
+    // Only an unscoped Super Admin sees every tenant; a Super Admin scoped to one tenant does not.
+    private bool BypassTenantFilter => tenant.IsSuperAdmin && tenant.MunicipalityId == null;
     private int? CurrentTenantId => tenant.MunicipalityId;
 
     protected override void OnModelCreating(ModelBuilder builder)
