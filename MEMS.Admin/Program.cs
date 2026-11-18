@@ -9,8 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Connection string "memsdb" is injected by the Aspire AppHost.
-builder.AddSqlServerDbContext<MemsDbContext>("memsdb");
+// EF Core + SQL Server ("memsdb" from the Aspire AppHost) and the MEMS.Data service layer.
+builder.AddMemsData();
 
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
@@ -28,14 +28,8 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.AddIdentityCore<ApplicationUser>(options =>
-    {
-        options.SignIn.RequireConfirmedAccount = false;
-        options.Stores.SchemaVersion = IdentitySchemaVersions.Version3;
-    })
-    .AddEntityFrameworkStores<MemsDbContext>()
-    .AddSignInManager()
-    .AddDefaultTokenProviders();
+builder.Services.AddMemsIdentityCore()
+    .AddSignInManager();
 
 builder.Services.AddSingleton<IEmailSender<ApplicationUser>, IdentityNoOpEmailSender>();
 
