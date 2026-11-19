@@ -1,0 +1,159 @@
+@page "/{Tenant}/candidates"
+@implements IDisposable
+@inject MemsApiClient Api
+@inject CompareStore Compare
+@inject NavigationManager Navigation
+
+<TenantShell Tenant="@Tenant">
+    <PageTitle>Candidates - @context.Name - Municipal Elections</PageTitle>
+    <h1 class="h3 mb-3">Candidates</h1>
+
+    <form class="row g-2 mb-3" role="search" @onsubmit="LoadCandidatesAsync" @onsubmit:preventDefault>
+        <div class="col-12 col-md-5">
+            <label class="form-label small" for="search">Search by name</label>
+            <input id="search" type="search" class="form-control" placeholder="Candidate name..."
+                   @bind="search" @bind:event="oninput" @bind:after="OnSearchChangedAsync" maxlength="100" />
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small" for="filter-municipality">Municipality</label>
+            @* The municipality is the tenant in the URL; picking another one opens that municipality's site. *@
+            <select id="filter-municipality" class="form-select" value="@context.Slug" @onchange="SwitchMunicipality">
+                @foreach (var m in directory.Count > 0 ? directory : [new MunicipalitySummaryDto(context.Id, context.Name, context.Slug, context.Province, context.ElectionDate, context.Tagline, context.PrimaryColor, context.LogoImageId)])
+                {
+                    <option value="@m.Slug" selected="@(m.Slug == context.Slug)">@m.Name</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-4">
+            <label class="form-label small" for="filter-position">Position</label>
+            <select id="filter-position" class="form-select" @bind="positionFilter" @bind:after="LoadCandidatesAsync">
+                <option value="0">All positions</option>
+                @foreach (var p in positions.Where(p => p.MunicipalitySlug == context.Slug))
+                {
+                    <option value="@p.Id">@p.Name</option>
+                }
+            </select>
+        </div>
+    </form>
+
+    @if (compareIds.Count > 0)
+    {
+        <div class="alert alert-light border d-flex flex-wrap justify-content-between align-items-center gap-2 py-2" id="compare-bar">
+            <span class="small">@compareIds.Count of @CompareStore.MaxCandidates candidates selected to compare</span>
+            <span class="d-flex gap-2">
+                <a class="btn btn-sm btn-tenant @(compareIds.Count < 2 ? "disabled" : "")" href="@($"{context.Slug}/compare")">Compare</a>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Compare.ClearAsync">Clear</button>
+            </span>
+        </div>
+    }
+
+    @if (candidates is null)
+    {
+        <p class="text-secondary" role="status">Loading candidates...</p>
+    }
+    else if (!ForTenant(context).Any())
+    {
+        <p id="no-candidates">No candidates match your search.</p>
+    }
+    else
+    {
+        <p class="small text-secondary" id="candidate-count">@ForTenant(context).Count() candidate(s)</p>
+        <div class="row g-3" id="candidate-list">
+            @foreach (var c in ForTenant(context))
+            {
+                <div class="col-12 col-md-6 col-xl-4" @key="c.Id">
+                    <CandidateCard Candidate="c" />
+                </div>
+            }
+        </div>
+    }
+</TenantShell>
+
+@code {
+    [Parameter] public string Tenant { get; set; } = "";
+    [SupplyParameterFromQuery(Name = "position")] public int? PositionQuery { get; set; }
+
+    private IReadOnlyList<MunicipalitySummaryDto> directory = [];
+    private IReadOnlyList<PositionDto> positions = [];
+    private IReadOnlyList<CandidateDto>? candidates;
+    private IReadOnlyList<int> compareIds = [];
+    private string? search;
+    private int positionFilter;
+    private string? loadedSlug;
+    private int requestVersion;
+    private CancellationTokenSource? searchDelay;
+
+    private IEnumerable<CandidateDto> ForTenant(MunicipalityDto m) => (candidates ?? []).Where(c => c.MunicipalitySlug == m.Slug);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Compare.Changed += OnCompareChanged;
+        try { directory = await Api.GetMunicipalitiesAsync(); } catch (HttpRequestException) { /* select shows the current tenant only */ }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var slug = SlugRules.Normalize(Tenant);
+        if (slug != loadedSlug)
+        {
+            // New tenant: reset everything of the previous one before any await.
+            loadedSlug = slug;
+            candidates = null;
+            positions = [];
+            search = null;
+            positionFilter = PositionQuery ?? 0;
+            await RefreshCompareAsync();
+            var loadedPositions = await Api.GetPositionsAsync(slug);
+            if (loadedSlug != slug) return;
+            positions = loadedPositions;
+            await LoadCandidatesAsync();
+        }
+    }
+
+    private async Task LoadCandidatesAsync()
+    {
+        var slug = loadedSlug!;
+        var version = ++requestVersion;
+        var loaded = await Api.GetCandidatesAsync(slug, search, positionFilter > 0 ? positionFilter : null);
+        // Only the newest request for the current tenant may update the list.
+        if (version == requestVersion && slug == loadedSlug)
+        {
+            candidates = loaded;
+        }
+    }
+
+    // Small delay so typing does not send a request per keystroke.
+    private async Task OnSearchChangedAsync()
+    {
+        searchDelay?.Cancel();
+        searchDelay = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(250, searchDelay.Token);
+            await LoadCandidatesAsync();
+        }
+        catch (TaskCanceledException) { }
+    }
+
+    private void SwitchMunicipality(ChangeEventArgs e)
+    {
+        if (e.Value is string other && other != loadedSlug)
+        {
+            Navigation.NavigateTo($"{other}/candidates");
+        }
+    }
+
+    private async Task RefreshCompareAsync() => compareIds = (await Compare.GetAsync()).For(loadedSlug ?? "");
+
+    private async void OnCompareChanged()
+    {
+        await RefreshCompareAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Compare.Changed -= OnCompareChanged;
+        searchDelay?.Cancel();
+    }
+}

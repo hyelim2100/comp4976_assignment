@@ -1,0 +1,131 @@
+@implements IDisposable
+@inject MemsApiClient Api
+@inject VotingGuideStore Guide
+@inject NavigationManager Navigation
+
+@* Frame of every tenant page (/{slug}/...): resolves the tenant from the URL, applies its colours and
+   logo, and renders the page only once THIS tenant's data is loaded.
+
+   Stale-data protection: when the slug in the URL changes (e.g. /burnaby -> /surrey) the previous
+   municipality is cleared immediately, the page content is not rendered until the new municipality
+   has loaded, and a late response for an old slug is ignored. *@
+
+@if (status == LoadStatus.NotFound)
+{
+    <PageTitle>Municipality not found - Municipal Elections</PageTitle>
+    <div class="container py-5" id="tenant-not-found">
+        <h1 class="h3">Municipality not found</h1>
+        <p class="text-secondary">There is no municipality at <code>/@slug</code>. It may have been renamed or removed.</p>
+        <a class="btn btn-primary" href="">Browse municipalities</a>
+    </div>
+}
+else if (status == LoadStatus.Error)
+{
+    <div class="container py-5">
+        <div class="alert alert-warning" role="alert">The election information could not be loaded. Please try again in a moment.</div>
+    </div>
+}
+else if (municipality is null)
+{
+    <div class="container py-5 text-secondary" role="status" id="tenant-loading">Loading...</div>
+}
+else
+{
+    <div class="tenant-shell" style="@Theme.Style(municipality.PrimaryColor)" data-tenant="@municipality.Slug">
+        <div class="tenant-header d-print-none">
+            <div class="container py-3 d-flex flex-wrap align-items-center gap-3">
+                <TenantLogo Slug="@municipality.Slug" ImageId="municipality.LogoImageId" Name="@municipality.Name" Size="56" />
+                <div class="me-auto">
+                    <a class="tenant-name h4 mb-0 text-decoration-none" href="@municipality.Slug">@municipality.Name</a>
+                    <div class="small tenant-subtitle">Election day: @municipality.ElectionDate.ToString("dddd, MMMM d, yyyy")</div>
+                </div>
+            </div>
+            <nav class="container" aria-label="@($"{municipality.Name} election")">
+                <ul class="nav nav-underline tenant-nav flex-nowrap overflow-auto">
+                    <li class="nav-item"><NavLink class="nav-link" href="@municipality.Slug" Match="NavLinkMatch.All">Home</NavLink></li>
+                    <li class="nav-item"><NavLink class="nav-link" href="@($"{municipality.Slug}/positions")">Positions</NavLink></li>
+                    <li class="nav-item"><NavLink class="nav-link" href="@($"{municipality.Slug}/candidates")">Candidates</NavLink></li>
+                    <li class="nav-item">
+                        <NavLink class="nav-link text-nowrap" href="@($"{municipality.Slug}/guide")">
+                            My voting guide <span class="badge rounded-pill guide-count" id="guide-count">@guideCount</span>
+                        </NavLink>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        <div class="container py-4">
+            @ChildContent(municipality)
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public string Tenant { get; set; } = "";
+    [Parameter, EditorRequired] public RenderFragment<MunicipalityDto> ChildContent { get; set; } = default!;
+
+    private enum LoadStatus { Loading, Ready, NotFound, Error }
+
+    private MunicipalityDto? municipality;
+    private LoadStatus status = LoadStatus.Loading;
+    private string slug = "";
+    private int guideCount;
+
+    protected override void OnInitialized() => Guide.Changed += OnGuideChanged;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var normalized = SlugRules.Normalize(Tenant);
+
+        // Tenant URLs are case-insensitive: /Richmond/candidates -> /richmond/candidates.
+        if (normalized != Tenant)
+        {
+            var relative = Navigation.ToBaseRelativePath(Navigation.Uri);
+            var rest = relative.Length > Tenant.Length ? relative[Tenant.Length..] : "";
+            Navigation.NavigateTo(Uri.EscapeDataString(normalized) + rest, replace: true);
+            return;
+        }
+        if (normalized == slug)
+        {
+            return;
+        }
+
+        // New tenant: forget the previous one before any await, so nothing of it is rendered.
+        slug = normalized;
+        municipality = null;
+        status = LoadStatus.Loading;
+        guideCount = 0;
+
+        try
+        {
+            var loaded = await Api.GetMunicipalityAsync(normalized);
+            if (slug != normalized)
+            {
+                return; // the URL changed again while loading
+            }
+            municipality = loaded;
+            status = loaded is null ? LoadStatus.NotFound : LoadStatus.Ready;
+            await RefreshGuideCountAsync();
+        }
+        catch (HttpRequestException)
+        {
+            if (slug == normalized)
+            {
+                status = LoadStatus.Error;
+            }
+        }
+    }
+
+    private async Task RefreshGuideCountAsync()
+    {
+        var guide = await Guide.GetAsync();
+        guideCount = guide.BelongsTo(slug) ? guide.Items.Count : 0;
+    }
+
+    private async void OnGuideChanged()
+    {
+        await RefreshGuideCountAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Guide.Changed -= OnGuideChanged;
+}

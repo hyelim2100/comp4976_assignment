@@ -1,0 +1,38 @@
+@implements IDisposable
+@inject CompareStore Compare
+
+<div class="form-check form-check-inline small mb-0">
+    <input class="form-check-input compare-toggle" type="checkbox" id="@($"compare-{Candidate.Id}")"
+           checked="@selected" disabled="@(!selected && full)" @onchange="ToggleAsync" />
+    <label class="form-check-label" for="@($"compare-{Candidate.Id}")">Compare</label>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public CandidateDto Candidate { get; set; } = default!;
+
+    private bool selected;
+    private bool full;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Compare.Changed += OnChanged;
+        await RefreshAsync();
+    }
+
+    private async Task RefreshAsync()
+    {
+        var ids = (await Compare.GetAsync()).For(Candidate.MunicipalitySlug);
+        selected = ids.Contains(Candidate.Id);
+        full = ids.Count >= CompareStore.MaxCandidates;
+    }
+
+    private Task ToggleAsync() => Compare.ToggleAsync(Candidate.MunicipalitySlug, Candidate.Id);
+
+    private async void OnChanged()
+    {
+        await RefreshAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Compare.Changed -= OnChanged;
+}

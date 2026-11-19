@@ -1,7 +1,64 @@
-﻿@page "/"
+@page "/"
+@inject MemsApiClient Api
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Municipal Elections - Browse municipalities</PageTitle>
 
-<h1>Hello, world!</h1>
+<section class="container py-4">
+    <h1 class="h2 mb-1">Browse municipalities</h1>
+    <p class="text-secondary mb-4">Choose your municipality to see its positions, candidates and build your personal voting guide.</p>
 
-Welcome to your new app.
+    @if (error is not null)
+    {
+        <div class="alert alert-warning" role="alert">@error</div>
+    }
+    else if (municipalities is null)
+    {
+        <p class="text-secondary" role="status">Loading municipalities...</p>
+    }
+    else if (municipalities.Count == 0)
+    {
+        <p>No municipalities have been published yet.</p>
+    }
+    else
+    {
+        <div class="row g-3" id="municipality-directory">
+            @foreach (var m in municipalities)
+            {
+                <div class="col-12 col-sm-6 col-lg-4">
+                    <a class="card h-100 text-decoration-none text-reset shadow-sm municipality-card" href="@m.Slug"
+                       style="--tenant: @m.PrimaryColor;">
+                        <div class="card-body d-flex gap-3 align-items-center">
+                            <TenantLogo Slug="@m.Slug" ImageId="m.LogoImageId" Name="@m.Name" Size="64" />
+                            <div>
+                                <h2 class="h5 mb-1">@m.Name</h2>
+                                <div class="small text-secondary">@m.Province</div>
+                                <div class="small">Election day: @m.ElectionDate.ToString("MMMM d, yyyy")</div>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrEmpty(m.Tagline))
+                        {
+                            <div class="card-footer small municipality-card-footer">@m.Tagline</div>
+                        }
+                    </a>
+                </div>
+            }
+        </div>
+    }
+</section>
+
+@code {
+    private IReadOnlyList<MunicipalitySummaryDto>? municipalities;
+    private string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            municipalities = await Api.GetMunicipalitiesAsync();
+        }
+        catch (HttpRequestException)
+        {
+            error = "The list of municipalities could not be loaded. Please try again in a moment.";
+        }
+    }
+}

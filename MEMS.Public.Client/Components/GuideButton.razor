@@ -1,0 +1,103 @@
+@implements IDisposable
+@inject VotingGuideStore Guide
+
+@* Add / remove a candidate in the voter's guide (sessionStorage only). Enforces the seat limit of the
+   position and asks before replacing a guide that belongs to another municipality. *@
+@if (guide is null)
+{
+    <button class="btn btn-sm btn-outline-secondary" disabled>...</button>
+}
+else if (guide.Contains(Candidate.Id))
+{
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <span class="badge text-bg-success guide-state">✓ In your guide</span>
+        <button class="btn btn-sm btn-outline-danger guide-remove" @onclick="RemoveAsync">Remove</button>
+    </div>
+}
+else if (SeatsFull)
+{
+    <button class="btn btn-sm btn-outline-secondary guide-full" disabled title="Remove a candidate for this position first">
+        Seats full (@ChosenForPosition/@Candidate.SeatsAvailable)
+    </button>
+}
+else
+{
+    <button class="btn btn-sm btn-tenant guide-add" @onclick="() => AddAsync(replace: false)">Add to my guide</button>
+}
+
+@if (message is not null)
+{
+    <div class="small text-danger mt-1" role="alert">@message</div>
+}
+
+@if (confirmReplace is not null)
+{
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="replace-title" id="guide-replace-dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="replace-title">Start a new voting guide?</h2>
+                </div>
+                <div class="modal-body">
+                    <p>Your voting guide contains candidates from <strong>@confirmReplace</strong>.
+                        A guide can only contain one municipality.</p>
+                    <p class="mb-0">Clear it and start a new guide for <strong>@Candidate.MunicipalityName</strong> with @Candidate.Name?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-secondary" id="guide-keep" @onclick="() => confirmReplace = null">Keep my @confirmReplace guide</button>
+                    <button class="btn btn-danger" id="guide-replace" @onclick="() => AddAsync(replace: true)">Clear and start new guide</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-backdrop show"></div>
+}
+
+@code {
+    [Parameter, EditorRequired] public CandidateDto Candidate { get; set; } = default!;
+
+    private VotingGuide? guide;
+    private string? confirmReplace;
+    private string? message;
+
+    // Seats only count within the same municipality's guide.
+    private int ChosenForPosition => guide is not null && guide.BelongsTo(Candidate.MunicipalitySlug) ? guide.CountFor(Candidate.PositionId) : 0;
+    private bool SeatsFull => ChosenForPosition >= Candidate.SeatsAvailable;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Guide.Changed += OnGuideChanged;
+        guide = await Guide.GetAsync();
+    }
+
+    private async Task AddAsync(bool replace)
+    {
+        message = null;
+        var result = await Guide.AddAsync(Candidate, replace);
+        confirmReplace = null;
+        switch (result.Status)
+        {
+            case GuideAddStatus.OtherMunicipality:
+                confirmReplace = result.Detail;
+                break;
+            case GuideAddStatus.SeatsFull:
+                message = $"You can choose at most {result.Seats} for {result.Detail}. Remove one first.";
+                break;
+        }
+        guide = await Guide.GetAsync();
+    }
+
+    private async Task RemoveAsync()
+    {
+        message = null;
+        await Guide.RemoveAsync(Candidate.Id);
+    }
+
+    private async void OnGuideChanged()
+    {
+        guide = await Guide.GetAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Guide.Changed -= OnGuideChanged;
+}

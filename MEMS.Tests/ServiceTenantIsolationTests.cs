@@ -55,6 +55,22 @@ public class ServiceTenantIsolationTests
     }
 
     [Fact]
+    public async Task Unscoped_super_admin_must_choose_a_municipality_for_a_new_position()
+    {
+        await using var host = await TestHost.CreateAsync();
+        await using var scope = host.SuperAdminScope(); // "All municipalities"
+        var positions = scope.ServiceProvider.GetRequiredService<PositionService>();
+
+        var missing = await positions.CreateAsync(new PositionInput { Name = "School Trustee", SeatsAvailable = 3 });
+        Assert.Equal(ServiceStatus.Invalid, missing.Status);
+        Assert.Contains(nameof(PositionInput.MunicipalityId), missing.Errors.Keys);
+
+        var chosen = await positions.CreateAsync(new PositionInput { Name = "School Trustee", SeatsAvailable = 3, MunicipalityId = host.SurreyId });
+        Assert.True(chosen.Succeeded);
+        Assert.Equal(host.SurreyId, chosen.Value!.MunicipalityId);
+    }
+
+    [Fact]
     public async Task Scoped_super_admin_writes_go_to_the_route_tenant()
     {
         await using var host = await TestHost.CreateAsync();

@@ -1,0 +1,112 @@
+@page "/{Tenant}/guide/print"
+@layout PrintLayout
+@inject MemsApiClient Api
+@inject VotingGuideStore Store
+@inject IJSRuntime JS
+
+@* Printable voting guide: municipality, election date, candidate and position names, print date.
+   Built in the browser from sessionStorage + public API data; nothing is sent to the server. *@
+<PageTitle>Voting guide - Municipal Elections</PageTitle>
+
+@if (status == "loading")
+{
+    <p class="text-secondary" role="status">Preparing your guide...</p>
+}
+else if (municipality is null)
+{
+    <p>Municipality not found. <a href="">Browse municipalities</a></p>
+}
+else
+{
+    <div class="print-actions d-print-none d-flex gap-2 mb-4">
+        <button class="btn btn-primary" @onclick="PrintAsync" id="print-button">Print</button>
+        <a class="btn btn-outline-secondary" href="@($"{municipality.Slug}/guide")">Back to my guide</a>
+    </div>
+
+    <article class="voting-guide-print" id="print-guide-sheet">
+        <header class="d-flex align-items-center gap-3 border-bottom pb-3 mb-3">
+            <TenantLogo Slug="@municipality.Slug" ImageId="municipality.LogoImageId" Name="@municipality.Name" Size="72" />
+            <div>
+                <h1 class="h3 mb-1">My voting guide</h1>
+                <div class="fs-5" id="print-municipality">@municipality.Name</div>
+                <div>Election date: <strong id="print-election-date">@municipality.ElectionDate.ToString("dddd, MMMM d, yyyy")</strong></div>
+            </div>
+        </header>
+
+        @if (rows.Count == 0)
+        {
+            <p id="print-empty">No candidates have been chosen yet.</p>
+        }
+        else
+        {
+            <table class="table table-bordered align-middle" id="print-table">
+                <thead>
+                    <tr>
+                        <th scope="col" style="width: 35%;">Position</th>
+                        <th scope="col">Candidate(s)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in rows)
+                    {
+                        <tr>
+                            <th scope="row">@row.Position <span class="small fw-normal text-secondary">(choose up to @row.Seats)</span></th>
+                            <td>
+                                @foreach (var name in row.Candidates)
+                                {
+                                    <div class="print-candidate">&#9744; @name</div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <footer class="small text-secondary mt-4">
+            Printed on <span id="print-date">@printedOn.ToString("MMMM d, yyyy h:mm tt")</span>.
+            This guide was prepared in your browser only; your choices were not sent to or stored by the municipality.
+        </footer>
+    </article>
+}
+
+@code {
+    [Parameter] public string Tenant { get; set; } = "";
+
+    private sealed record PrintRow(string Position, int Seats, List<string> Candidates);
+
+    private MunicipalityDto? municipality;
+    private List<PrintRow> rows = [];
+    private string status = "loading";
+    private DateTime printedOn = DateTime.Now;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        status = "loading";
+        var slug = SlugRules.Normalize(Tenant);
+        municipality = await Api.GetMunicipalityAsync(slug);
+        if (municipality is not null)
+        {
+            var guide = await Store.GetAsync();
+            if (guide.BelongsTo(slug))
+            {
+                var chosen = guide.Items.Select(i => i.CandidateId).ToHashSet();
+                var positions = await Api.GetPositionsAsync(slug);
+                var candidates = (await Api.GetCandidatesAsync(slug)).Where(c => chosen.Contains(c.Id)).ToList();
+                rows = positions
+                    .Select(p => new PrintRow(p.Name, p.SeatsAvailable, candidates.Where(c => c.PositionId == p.Id).Select(c => c.Name).ToList()))
+                    .Where(r => r.Candidates.Count > 0)
+                    .ToList();
+            }
+        }
+        printedOn = DateTime.Now;
+        status = "ready";
+    }
+
+    private async Task PrintAsync()
+    {
+        printedOn = DateTime.Now;
+        StateHasChanged();
+        await JS.InvokeVoidAsync("print");
+    }
+}

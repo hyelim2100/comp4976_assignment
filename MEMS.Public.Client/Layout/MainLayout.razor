@@ -1,9 +1,43 @@
 ﻿@inherits LayoutComponentBase
 
-@Body
+<header class="site-bar border-bottom bg-white d-print-none">
+    <div class="container d-flex flex-wrap align-items-center justify-content-between gap-2 py-2">
+        <a class="site-brand text-decoration-none text-dark fw-semibold" href="">
+            <span class="site-brand-mark" aria-hidden="true">✓</span> Municipal Elections
+        </a>
+        <a class="small" href="">Browse municipalities</a>
+    </div>
+</header>
+
+<main class="pb-5">
+    <ErrorBoundary @ref="errorBoundary">
+        <ChildContent>
+            @Body
+        </ChildContent>
+        <ErrorContent>
+            <div class="container py-4">
+                <div class="alert alert-danger" role="alert">
+                    <h1 class="h5">Something went wrong</h1>
+                    <p class="mb-2">The page could not be displayed. Please try again.</p>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="() => errorBoundary?.Recover()">Try again</button>
+                </div>
+            </div>
+        </ErrorContent>
+    </ErrorBoundary>
+</main>
+
+<footer class="border-top py-3 text-center small text-secondary d-print-none">
+    Your voting guide is kept only in this browser tab and is never sent to the server.
+</footer>
 
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
+    An unexpected error has occurred.
     <a href="." class="reload">Reload</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    private ErrorBoundary? errorBoundary;
+
+    protected override void OnParametersSet() => errorBoundary?.Recover();
+}

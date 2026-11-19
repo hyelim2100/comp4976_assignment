@@ -1,0 +1,89 @@
+@page "/{Tenant}/candidates/{Id:int}"
+@inject MemsApiClient Api
+
+<TenantShell Tenant="@Tenant">
+    <PageTitle>@(candidate?.Name ?? "Candidate") - @context.Name - Municipal Elections</PageTitle>
+
+    @if (loading)
+    {
+        <p class="text-secondary" role="status">Loading candidate...</p>
+    }
+    else if (candidate is null || candidate.MunicipalitySlug != context.Slug)
+    {
+        @* Also the answer for a candidate id of another municipality (the API returns 404). *@
+        <div id="candidate-not-found">
+            <h1 class="h4">Candidate not found</h1>
+            <p class="text-secondary">This candidate is not part of the @context.Name election.</p>
+            <a class="btn btn-outline-secondary" href="@($"{context.Slug}/candidates")">All @context.Name candidates</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4" id="candidate-details">
+            <div class="col-12 col-md-4 col-lg-3">
+                @if (MemsApiClient.ImageUrl(candidate.MunicipalitySlug, candidate.PhotoImageId) is { } photo)
+                {
+                    <img src="@photo" alt="Photo of @candidate.Name" class="img-fluid rounded shadow-sm candidate-photo-large" />
+                }
+                else
+                {
+                    <div class="ratio ratio-1x1 bg-light border rounded d-flex align-items-center justify-content-center text-secondary">No photo</div>
+                }
+            </div>
+            <div class="col-12 col-md-8 col-lg-9">
+                <h1 class="h2 mb-1">@candidate.Name</h1>
+                <p class="text-secondary">Candidate for <strong>@candidate.PositionName</strong> (@candidate.SeatsAvailable seat@(candidate.SeatsAvailable == 1 ? "" : "s"))</p>
+                <div class="mb-3 d-flex flex-wrap gap-3 align-items-center">
+                    <GuideButton Candidate="candidate" />
+                    <CompareToggle Candidate="candidate" />
+                </div>
+                @if (!string.IsNullOrEmpty(candidate.Profile))
+                {
+                    <h2 class="h5">Biography</h2>
+                    <p style="white-space: pre-line;">@candidate.Profile</p>
+                }
+                <dl class="row small">
+                    @if (candidate.Website is not null)
+                    {
+                        <dt class="col-sm-2">Website</dt>
+                        <dd class="col-sm-10"><a href="@candidate.Website" target="_blank" rel="noopener noreferrer">@candidate.Website</a></dd>
+                    }
+                    @if (candidate.Email is not null)
+                    {
+                        <dt class="col-sm-2">Email</dt>
+                        <dd class="col-sm-10"><a href="mailto:@candidate.Email">@candidate.Email</a></dd>
+                    }
+                </dl>
+                <a href="@($"{context.Slug}/candidates")">&larr; All candidates</a>
+            </div>
+        </div>
+    }
+</TenantShell>
+
+@code {
+    [Parameter] public string Tenant { get; set; } = "";
+    [Parameter] public int Id { get; set; }
+
+    private CandidateDto? candidate;
+    private bool loading = true;
+    private (string Slug, int Id)? loadedKey;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var key = (SlugRules.Normalize(Tenant), Id);
+        if (key == loadedKey)
+        {
+            return;
+        }
+        loadedKey = key;
+        candidate = null;
+        loading = true;
+
+        var loaded = await Api.GetCandidateAsync(key.Item1, key.Id);
+        if (loadedKey == key)
+        {
+            candidate = loaded;
+            loading = false;
+        }
+    }
+}

@@ -1,0 +1,68 @@
+@page "/{Tenant}/compare"
+@inject MemsApiClient Api
+@inject CompareStore Store
+
+<TenantShell Tenant="@Tenant">
+    <PageTitle>Compare candidates - @context.Name - Municipal Elections</PageTitle>
+    <h1 class="h3 mb-3">Compare candidates</h1>
+
+    @if (candidates is null)
+    {
+        <p class="text-secondary" role="status">Loading...</p>
+    }
+    else if (candidates.Count == 0)
+    {
+        <p>Select up to @CompareStore.MaxCandidates candidates with "Compare" on the <a href="@($"{context.Slug}/candidates")">candidates page</a>.</p>
+    }
+    else
+    {
+        <div class="row g-3" id="compare-grid">
+            @foreach (var c in candidates)
+            {
+                <div class="col-12 col-md-4">
+                    <div class="card h-100 shadow-sm">
+                        @if (MemsApiClient.ImageUrl(c.MunicipalitySlug, c.PhotoImageId) is { } photo)
+                        {
+                            <img src="@photo" class="card-img-top compare-photo" alt="Photo of @c.Name" />
+                        }
+                        <div class="card-body">
+                            <h2 class="h5"><a href="@($"{context.Slug}/candidates/{c.Id}")">@c.Name</a></h2>
+                            <p class="small text-secondary">@c.PositionName</p>
+                            <p class="small">@(c.Profile ?? "No biography provided.")</p>
+                            @if (c.Website is not null) { <div class="small text-truncate"><a href="@c.Website" target="_blank" rel="noopener noreferrer">@c.Website</a></div> }
+                            @if (c.Email is not null) { <div class="small text-truncate">@c.Email</div> }
+                        </div>
+                        <div class="card-footer bg-white"><GuideButton Candidate="c" /></div>
+                    </div>
+                </div>
+            }
+        </div>
+        <button class="btn btn-outline-secondary mt-3" @onclick="ClearAsync">Clear comparison</button>
+    }
+</TenantShell>
+
+@code {
+    [Parameter] public string Tenant { get; set; } = "";
+
+    private List<CandidateDto>? candidates;
+    private string? loadedSlug;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var slug = SlugRules.Normalize(Tenant);
+        if (slug == loadedSlug) return;
+        loadedSlug = slug;
+        candidates = null;
+
+        var ids = (await Store.GetAsync()).For(slug);
+        var all = ids.Count == 0 ? [] : await Api.GetCandidatesAsync(slug);
+        if (loadedSlug != slug) return;
+        candidates = ids.Select(id => all.FirstOrDefault(c => c.Id == id)).OfType<CandidateDto>().ToList();
+    }
+
+    private async Task ClearAsync()
+    {
+        await Store.ClearAsync();
+        candidates = [];
+    }
+}

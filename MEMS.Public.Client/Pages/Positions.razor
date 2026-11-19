@@ -1,0 +1,67 @@
+@page "/{Tenant}/positions"
+@inject MemsApiClient Api
+
+<TenantShell Tenant="@Tenant">
+    <PageTitle>Positions - @context.Name - Municipal Elections</PageTitle>
+    <h1 class="h3 mb-3">Positions on the ballot</h1>
+
+    @if (positions is null)
+    {
+        <p class="text-secondary" role="status">Loading positions...</p>
+    }
+    else if (!ForTenant(context).Any())
+    {
+        <p>No positions have been published yet.</p>
+    }
+    else
+    {
+        <div class="row g-3" id="position-list">
+            @foreach (var p in ForTenant(context))
+            {
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm position-card" data-municipality="@p.MunicipalitySlug">
+                        <div class="card-body">
+                            <h2 class="h5">@p.Name</h2>
+                            <p class="mb-1"><span class="badge tenant-fill">@p.SeatsAvailable seat@(p.SeatsAvailable == 1 ? "" : "s")</span>
+                                <span class="small text-secondary ms-1">@p.CandidateCount candidate@(p.CandidateCount == 1 ? "" : "s")</span></p>
+                            @if (!string.IsNullOrEmpty(p.Description))
+                            {
+                                <p class="small mb-0">@p.Description</p>
+                            }
+                        </div>
+                        <div class="card-footer bg-white">
+                            <a href="@($"{context.Slug}/candidates?position={p.Id}")">See candidates</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</TenantShell>
+
+@code {
+    [Parameter] public string Tenant { get; set; } = "";
+
+    private IReadOnlyList<PositionDto>? positions;
+    private string? loadedSlug;
+
+    // Defence in depth: only ever render rows of the tenant shown in the URL.
+    private IEnumerable<PositionDto> ForTenant(MunicipalityDto m) => (positions ?? []).Where(p => p.MunicipalitySlug == m.Slug);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var slug = SlugRules.Normalize(Tenant);
+        if (slug == loadedSlug)
+        {
+            return;
+        }
+        loadedSlug = slug;
+        positions = null; // clear before awaiting: no data of the previous tenant stays on screen
+
+        var loaded = await Api.GetPositionsAsync(slug);
+        if (loadedSlug == slug)
+        {
+            positions = loaded;
+        }
+    }
+}

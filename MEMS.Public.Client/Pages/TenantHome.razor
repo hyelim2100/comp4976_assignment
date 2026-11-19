@@ -1,0 +1,56 @@
+@page "/{Tenant}"
+@inject MemsApiClient Api
+
+<TenantShell Tenant="@Tenant">
+    <PageTitle>@context.Name elections - Municipal Elections</PageTitle>
+
+    <section class="tenant-hero rounded-3 p-4 mb-4">
+        <div class="d-flex flex-wrap align-items-center gap-4">
+            <TenantLogo Slug="@context.Slug" ImageId="context.LogoImageId" Name="@context.Name" Size="120" />
+            <div>
+                <h1 class="display-6 mb-1" id="tenant-title">@context.Name</h1>
+                @if (!string.IsNullOrEmpty(context.Tagline))
+                {
+                    <p class="lead mb-1">@context.Tagline</p>
+                }
+                <p class="mb-0">General local election: <strong id="election-date">@context.ElectionDate.ToString("dddd, MMMM d, yyyy")</strong></p>
+            </div>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrEmpty(context.Description))
+    {
+        <p class="mb-4" style="white-space: pre-line;" id="tenant-description">@context.Description</p>
+    }
+
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <a class="card h-100 text-decoration-none text-reset shadow-sm" href="@($"{context.Slug}/positions")">
+                <div class="card-body">
+                    <div class="display-6 tenant-text">@context.PositionCount</div>
+                    <div>Positions on the ballot</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-md-4">
+            <a class="card h-100 text-decoration-none text-reset shadow-sm" href="@($"{context.Slug}/candidates")">
+                <div class="card-body">
+                    <div class="display-6 tenant-text">@context.CandidateCount</div>
+                    <div>Candidates</div>
+                </div>
+            </a>
+        </div>
+        <div class="col-12 col-md-4">
+            <a class="card h-100 text-decoration-none text-reset shadow-sm" href="@($"{context.Slug}/guide")">
+                <div class="card-body">
+                    <div class="h5 tenant-text">My voting guide</div>
+                    <div class="small text-secondary">Pick your candidates and print a guide to take to the polls.</div>
+                </div>
+            </a>
+        </div>
+    </div>
+</TenantShell>
+
+@code {
+    [Parameter] public string Tenant { get; set; } = "";
+}

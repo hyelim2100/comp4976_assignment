@@ -1,0 +1,29 @@
+@* One candidate in the directory. *@
+<div class="card h-100 shadow-sm candidate-card" data-candidate-id="@Candidate.Id" data-municipality="@Candidate.MunicipalitySlug">
+    <div class="card-body d-flex gap-3">
+        @if (MemsApiClient.ImageUrl(Candidate.MunicipalitySlug, Candidate.PhotoImageId) is { } photo)
+        {
+            <img src="@photo" alt="@Candidate.Name" class="rounded candidate-photo" loading="lazy" />
+        }
+        else
+        {
+            <div class="rounded candidate-photo bg-light border d-flex align-items-center justify-content-center text-secondary small">No photo</div>
+        }
+        <div class="flex-grow-1 min-w-0">
+            <h3 class="h6 mb-1"><a class="stretched-link-off candidate-name" href="@($"{Candidate.MunicipalitySlug}/candidates/{Candidate.Id}")">@Candidate.Name</a></h3>
+            <div class="small text-secondary mb-2 candidate-position">@Candidate.PositionName</div>
+            @if (!string.IsNullOrEmpty(Candidate.Profile))
+            {
+                <p class="small mb-2 text-truncate-2">@Candidate.Profile</p>
+            }
+        </div>
+    </div>
+    <div class="card-footer bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <GuideButton Candidate="Candidate" />
+        <CompareToggle Candidate="Candidate" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public CandidateDto Candidate { get; set; } = default!;
+}

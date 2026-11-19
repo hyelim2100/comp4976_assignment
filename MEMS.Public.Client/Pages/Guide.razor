@@ -1,0 +1,124 @@
+@page "/{Tenant}/guide"
+@implements IDisposable
+@inject MemsApiClient Api
+@inject VotingGuideStore Store
+
+<TenantShell Tenant="@Tenant">
+    <PageTitle>My voting guide - @context.Name - Municipal Elections</PageTitle>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+        <h1 class="h3 mb-0">My voting guide</h1>
+        @if (guide?.BelongsTo(context.Slug) == true)
+        {
+            <div class="d-flex gap-2">
+                <a class="btn btn-tenant" href="@($"{context.Slug}/guide/print")" id="print-guide">Printable guide</a>
+                <button class="btn btn-outline-danger" id="clear-guide" @onclick="Store.ClearAsync">Clear guide</button>
+            </div>
+        }
+    </div>
+    <p class="small text-secondary mb-4">
+        <span aria-hidden="true">🔒</span> Your choices are kept only in this browser tab (session storage). They are never sent to
+        the server or stored in a database, and they disappear when you close the tab.
+    </p>
+
+    @if (guide is null || rows is null)
+    {
+        <p class="text-secondary" role="status">Loading your guide...</p>
+    }
+    else if (!guide.BelongsTo(context.Slug))
+    {
+        <div class="alert alert-light border" id="guide-empty">
+            @if (guide.Items.Count > 0)
+            {
+                <p class="mb-2">Your current guide is for <strong>@guide.MunicipalityName</strong>. A guide can only contain one municipality.</p>
+                <a class="btn btn-sm btn-outline-primary" href="@($"{guide.TenantSlug}/guide")">Open my @guide.MunicipalityName guide</a>
+            }
+            else
+            {
+                <p class="mb-2">Your guide is empty.</p>
+            }
+            <a class="btn btn-sm btn-tenant" href="@($"{context.Slug}/candidates")">Browse @context.Name candidates</a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-column gap-3" id="guide-positions">
+            @foreach (var position in rows)
+            {
+                <section class="card shadow-sm guide-position">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h2 class="h6 mb-0">@position.Position.Name</h2>
+                        <span class="badge @(position.Chosen.Count >= position.Position.SeatsAvailable ? "tenant-fill" : "text-bg-light border")">
+                            @position.Chosen.Count of @position.Position.SeatsAvailable chosen
+                        </span>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        @if (position.Chosen.Count == 0)
+                        {
+                            <li class="list-group-item small text-secondary">No candidate chosen. <a href="@($"{context.Slug}/candidates?position={position.Position.Id}")">Choose</a></li>
+                        }
+                        @foreach (var c in position.Chosen)
+                        {
+                            <li class="list-group-item d-flex justify-content-between align-items-center gap-2 guide-item" data-candidate-id="@c.Id">
+                                <a href="@($"{context.Slug}/candidates/{c.Id}")">@c.Name</a>
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => Store.RemoveAsync(c.Id)">Remove</button>
+                            </li>
+                        }
+                    </ul>
+                </section>
+            }
+        </div>
+    }
+</TenantShell>
+
+@code {
+    [Parameter] public string Tenant { get; set; } = "";
+
+    private sealed record PositionRow(PositionDto Position, List<CandidateDto> Chosen);
+
+    private VotingGuide? guide;
+    private List<PositionRow>? rows;
+    private IReadOnlyList<PositionDto> positions = [];
+    private IReadOnlyList<CandidateDto> candidates = [];
+    private string? loadedSlug;
+
+    protected override void OnInitialized() => Store.Changed += OnGuideChanged;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        var slug = SlugRules.Normalize(Tenant);
+        if (slug == loadedSlug)
+        {
+            return;
+        }
+        loadedSlug = slug;
+        guide = null;
+        rows = null;
+
+        // Public data comes from the API; the selection itself comes from sessionStorage only.
+        var loadedPositions = await Api.GetPositionsAsync(slug);
+        var loadedCandidates = await Api.GetCandidatesAsync(slug);
+        if (loadedSlug != slug) return;
+        positions = loadedPositions;
+        candidates = loadedCandidates;
+        await Store.RemoveMissingAsync(slug, candidates.Select(c => c.Id).ToHashSet());
+        await BuildAsync();
+    }
+
+    private async Task BuildAsync()
+    {
+        guide = await Store.GetAsync();
+        var chosen = guide.BelongsTo(loadedSlug!) ? guide.Items.Select(i => i.CandidateId).ToHashSet() : [];
+        rows = positions
+            .Select(p => new PositionRow(p, candidates.Where(c => c.PositionId == p.Id && chosen.Contains(c.Id)).ToList()))
+            .ToList();
+    }
+
+    private async void OnGuideChanged()
+    {
+        await BuildAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Store.Changed -= OnGuideChanged;
+}
