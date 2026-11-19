@@ -1,19 +1,29 @@
 ---
-applyTo: "MunicipalElections/{Models,Data}/**"
-description: "EF Core Code First, SQLite and seeding rules"
+applyTo: "MEMS.Data/**"
+description: "EF Core Code First on SQL Server, tenant query filters, services and seeding"
 ---
 
-# Data model instructions
+# MEMS.Data instructions
 
-- Entities use data annotations for validation that the UI should also enforce (`[Required]`,
-  `[StringLength]`, `[Range]`, `[EmailAddress]`, `[Url]`, `[Display]`).
-- Configure relationships, delete behaviour and indexes in `ApplicationDbContext.OnModelCreating`.
-  Current rules: Municipality → Positions → Candidates cascade; a municipality's admin role cascades;
-  unique indexes on municipality name, (MunicipalityId, position name) and (UserId, CandidateId).
-- A candidate's municipality is reached through `Position.Municipality`; do not add a duplicate
-  `MunicipalityId` column to `Candidate`.
-- After any model change: `dotnet ef migrations add <DescriptiveName> -o Data/Migrations`, build,
-  and review the generated migration before committing.
-- `DbSeeder` must be idempotent (check before inserting) because it runs on every startup,
-  including on Azure. Seed images belong in `SeedData/Images` and use `seed-*` file names.
-- Store dates as `DateTime`; candidate `DateCreated` is set in UTC.
+- Entities use DataAnnotations for database constraints (`[Required]`, `[MaxLength(FieldLengths.X)]`,
+  `[Range]`); take lengths from `MEMS.Shared.Validation.FieldLengths` so the UI/API rules match.
+- Tenant-owned entities implement `ITenantOwned` and get a query filter in `MemsDbContext.OnModelCreating`:
+  `x => BypassTenantFilter || x.MunicipalityId == CurrentTenantId`. Bypass happens only for a Super Admin
+  without a working tenant.
+- Keep `Candidate (PositionId, MunicipalityId) -> Position (Id, MunicipalityId)` as a composite foreign key:
+  it guarantees in the database that a candidate never points to another tenant's position.
+  SQL Server forbids multiple cascade paths: Municipality→Candidate is `NoAction`.
+- Services (`Services/*Service.cs`):
+  - create contexts with `IDbContextFactory<MemsDbContext>` (one short-lived context per operation);
+  - return `ServiceResult` / `ServiceResult<T>` (`NotFound`, `Forbidden`, `Invalid(field, message)`);
+  - take the tenant from `ITenantContext`; other-tenant ids are `NotFound`;
+  - Super-Admin-only operations check `tenant.IsSuperAdmin` first;
+  - log with message templates and ids, never with personal data or passwords.
+- Images are stored in the `Images` table (`StoredImage`) after `ImageRules.Validate`; delete the old image
+  when it is replaced.
+- Multi-statement deletes run inside `db.Database.CreateExecutionStrategy().ExecuteAsync(...)` with a transaction
+  (the Aspire SQL Server integration enables retries).
+- After a model change: `dotnet ef migrations add <Name> --project MEMS.Data --startup-project MEMS.Data --output-dir Migrations`,
+  then `dotnet ef migrations has-pending-model-changes` must report no changes.
+- `MemsSeeder` runs on every API start and must stay idempotent.
+- There must never be a table or column for voting-guide selections or vote counts (election privacy).

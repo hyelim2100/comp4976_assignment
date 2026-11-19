@@ -484,11 +484,14 @@ $RECYCLE.BIN/
 # exclude connection string file
 appsettings.Development.json
 
-# Local database and uploaded files
+# Local database files (the app itself uses SQL Server in a Docker container)
 *.db
 *.db-shm
 *.db-wal
-MunicipalElections/wwwroot/uploads/
+
+# Submission archive and browser profiles left by the E2E scripts
+*.zip
+mems-e2e-*/
 
 # local only
 _spec/

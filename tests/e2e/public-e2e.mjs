@@ -42,7 +42,8 @@ try {
 
   // ---------- routing ----------
   await p.goto('', 3000);
-  await p.waitFor(`document.querySelectorAll('#municipality-directory a').length > 0`, 20000);
+  // First load of a fresh browser profile downloads the WebAssembly runtime: allow a cold start.
+  await p.waitFor(`document.querySelectorAll('#municipality-directory a').length > 0`, 60000);
   const directory = await p.texts('#municipality-directory h2');
   check('/ : browse municipalities lists every tenant', directory.length >= 5, directory.join(', '));
 
