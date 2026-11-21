@@ -41,7 +41,7 @@ export async function launchBrowser(port = Number(process.env.CDP_PORT ?? 9333))
 
   const profile = mkdtempSync(join(tmpdir(), 'mems-e2e-'));
   const proc = spawn(executable, ['--headless=new', `--remote-debugging-port=${port}`, `--user-data-dir=${profile}`,
-    '--ignore-certificate-errors', '--no-first-run', '--window-size=1280,900', 'about:blank'], { stdio: 'ignore' });
+    '--ignore-certificate-errors', '--no-first-run', '--window-size=1280,900', '--lang=en-US', 'about:blank'], { stdio: 'ignore' });
 
   let version;
   for (let i = 0; i < 100 && !version; i++) {
@@ -82,6 +82,9 @@ async function createPage(browser, baseUrl, browserContextId) {
   const { result: { sessionId } } = await send('Target.attachToTarget', { targetId, flatten: true });
   await send('Page.enable', {}, sessionId);
   await send('Network.enable', {}, sessionId);
+  // English UI whatever the OS language (browser widgets, Accept-Language)
+  await send('Network.setExtraHTTPHeaders', { headers: { 'Accept-Language': 'en-US,en;q=0.9' } }, sessionId);
+  await send('Emulation.setLocaleOverride', { locale: 'en-US' }, sessionId).catch(() => {});
 
   // Every request the page sends (method, URL, body) - used to prove what is (not) sent to the server.
   const requests = [];

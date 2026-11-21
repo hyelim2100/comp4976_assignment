@@ -9,13 +9,23 @@ COMP4976 Assignment 2 - Municipal Elections Management System (MEMS) Modernizati
 
 2. CONTRIBUTIONS
 ----------------
-TODO (team): describe who did what in Assignment 2.
+Hyelim Kim (A01459149)
+- .NET Aspire solution setup (AppHost, ServiceDefaults, SQL Server container)
+- Multi-tenant data model, EF Core query filters, migrations and seed data
+- ASP.NET Web API with JWT authentication, tenant checks, ProblemDetails
+  and OpenAPI documentation
+- Unit tests for tenant isolation
+
+Hailey Kim (A01412747)
+- Blazor Server admin app (tenant-scoped pages, tenant and user management)
+- Blazor WebAssembly public site, voting guide (sessionStorage) and
+  printable guide
+- E2E checks, deficiency report, architecture diagram, ERD and screenshots
 
 
 3. WHAT HAS NOT BEEN COMPLETED
 ------------------------------
-- No Azure deployment (not required for Assignment 2).
-- The documentation PDF/Word file must still include the screenshots (see docs/screenshots.md).
+- No Azure deployment.
 
 
 4. MAJOR CHALLENGES
@@ -92,9 +102,10 @@ Start from an empty database: stop the AppHost, then
   docs/erd.md                 entity relationship diagram
   docs/api.md                 API endpoints, request/response examples, error responses
   docs/deficiency-report.md   Assignment 1 deficiency resolution report
-  docs/copilot-report.md      GitHub Copilot usage
+  docs/copilot-report.md      AI assistant usage (Claude Code)
   docs/test-evidence.md       recorded results of the unit and end-to-end tests
-  docs/screenshots.md         screenshot checklist for the submitted document
+  docs/screenshots.md         how each screenshot was taken (images in docs/screenshots/)
+  docs/MEMS-Assignment2-Documentation.docx / .pdf   submitted document
 
 
 9. SOURCE ARCHIVE

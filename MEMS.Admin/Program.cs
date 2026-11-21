@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Claims;
 using MEMS.Admin.Components;
 using MEMS.Admin.Components.Account;
@@ -5,6 +6,10 @@ using MEMS.Admin.Services;
 using MEMS.Data;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Identity;
+
+// The admin site is in English: format dates ("Saturday, October 17, 2026", "Oct 17, 2026") the same way
+// whatever the language of the server's operating system.
+CultureInfo.DefaultThreadCurrentCulture = CultureInfo.DefaultThreadCurrentUICulture = new CultureInfo("en-US");
 
 var builder = WebApplication.CreateBuilder(args);
 
