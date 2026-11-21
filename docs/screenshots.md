@@ -1,83 +1,68 @@
-# Screenshot checklist for the submitted document
+# Screenshots
 
-Start everything first: Docker Desktop running → `dotnet run --project MEMS.AppHost` → open the dashboard link
-printed in the console (it contains a login token). Wait until `api`, `admin` and `public` are **Healthy**.
-Windows: `Win + Shift + S` (area) or a browser's full-page capture (Edge: `Ctrl + Shift + S`).
-Use a private window for each account so sessions do not mix.
+This section shows the running system: Aspire dashboard, admin site, public site, API tests and the SQL Server database.
 
 ## 1. Aspire dashboard
 
-| # | Screenshot | How |
+| # | Screenshot | Description |
 |---|---|---|
-| 1.1 | **Resources** | Dashboard → *Resources*. Show `sql`, `memsdb`, `api`, `admin`, `public` all *Running* + *Healthy*, with the URL column (Swagger UI, Admin site, Public site). |
-| 1.2 | **Health checks** | Click `api` → details panel → *Health checks* (`api_https_/health_200_check`, database check) = Healthy. Optionally open `https://localhost:7201/health` → `Healthy`. |
-| 1.3 | **Structured logs** | *Structured logs* → resource `api` after the 403 test in 4.3: `Warning` entries "Cross-tenant request blocked: user burnabyadmin (municipality 1) ..." next to the login entries (open one to see `UserName`, `UserMunicipalityId`, `Path` as properties). |
-| 1.4 | **Traces** | *Traces* list (a), then open a `public: GET /api/{**catch-all}` trace (b): the span tree shows public (YARP proxy) → api `GET api/{tenant}/candidates` → SQL Server queries. |
-| 1.5 | **Metrics** (optional) | *Metrics* → `api` → `http.server.request.duration`. |
-| 1.6 | **Service discovery / config** (optional) | `public` → *Environment variables*: `services__api__https__0`; `api` → `ConnectionStrings__memsdb` (value hidden). |
+| 1.1 | **Resources** | All resources (sql, memsdb, admin, api, public) are Running, with links to Swagger UI, the admin site and the public site. |
+| 1.2 | **Health checks** | The details panel of the api resource shows its health check `api_https_/health_200_check` as Healthy; environment variable values are masked. |
+| 1.3 | **Structured logs** | Structured logs of the api resource, with Warning entries "Cross-tenant request blocked: user burnabyadmin (municipality 1) ..." between the API login entries. |
+| 1.4 | **Traces** | The trace list with spans from admin, api, public and memsdb (a), and the detail of a public request: public `GET /api/{**catch-all}` → api `GET api/{tenant}/candidates` → SQL queries on Municipalities and Candidates (b). |
+| 1.5 | **Metrics** | `http.server.request.duration` of the api resource (P50, P90, P99) with GET/POST requests and status codes 200, 400, 401, 403 and 404. |
+| 1.6 | **Service discovery / configuration** | Environment variables of the public resource, including `services__api__https__0` and `services__api__http__0` set by Aspire; values are masked. |
 
-## 2. Admin site (`https://localhost:7101/admin`)
+## 2. Admin site
 
-| # | Screenshot | How |
+| # | Screenshot | Description |
 |---|---|---|
-| 2.1 | Login page | Signed out, `/admin/Account/Login`. |
-| 2.2 | **Super Admin dashboard** | `super` → Dashboard shows 5 / 15 / 22 and the *Working in: All municipalities* selector. |
-| 2.3 | Working tenant | Choose *Burnaby* in the selector → dashboard 1 / 3 / 5, candidates list only Burnaby. |
-| 2.4 | **Create municipality + admin account** | *Municipalities → Create municipality*; fill the tenant and the *Municipality Admin account* sections (show a validation error first, e.g. slug "admin" reserved). |
-| 2.5 | **Administrators page** | *Administrators* list (role, municipality) and the *Edit / assign* form. |
-| 2.6 | **Delete impact** | *Municipalities → Delete* on a tenant (here Maple Ridge, view only — nothing is deleted): counts of positions, candidates, images and the admin accounts that would be removed. |
-| 2.7 | **pm dashboard** | Private window, `pm` → badge *Pitt Meadows*, dashboard 1 / 3 / 5. |
-| 2.8 | **pm lists and dropdowns** | `pm` → Candidates (only Pitt Meadows) (a) and the *Add candidate* form (b); opening its position dropdown lists only Pitt Meadows positions (c). |
-| 2.9 | **pm direct URL** | `pm` → type `/admin/candidates/1` (a Burnaby candidate) → "Candidate not found"; `/admin/users` → "Access denied". |
-| 2.10 | Candidate form with photo | Edit a candidate: photo preview + validation messages (e.g. invalid email). |
+| 2.1 | Login page | The admin sign-in page with user name and password. |
+| 2.2 | **Super Admin dashboard** | Super Admin working in All municipalities: 5 municipalities, 15 positions, 22 candidates. |
+| 2.3 | Working tenant | With Burnaby selected as the working tenant, the dashboard shows 1 municipality, 3 positions and 5 candidates (a) and the candidates list shows only Burnaby (b). |
+| 2.4 | **Create municipality + admin account** | The create form with validation errors: the slug "admin" is reserved and the administrator account fields are required. |
+| 2.5 | **Administrators page** | The administrators list with each account's role and municipality (a) and the edit form of pm, a Municipality Admin of Pitt Meadows (b). |
+| 2.6 | **Delete impact** | The delete confirmation for Maple Ridge lists the positions, candidates, images and administrator account that would be deleted. |
+| 2.7 | **pm dashboard** | pm is fixed to Pitt Meadows: 1 municipality, 3 positions, 5 candidates. |
+| 2.8 | **pm lists and dropdowns** | pm's candidates list contains only Pitt Meadows (a); in the Add candidate form (b) the position dropdown lists only Pitt Meadows positions (c). |
+| 2.9 | **pm direct URL** | pm opening a Burnaby candidate by URL sees "Candidate not found" (a); the Administrators page shows "Access denied" (b). |
+| 2.10 | Candidate form with photo | The candidate edit form with the current photo and the validation message for an invalid email address. |
 
-## 3. Public site (`https://localhost:5001`)
+## 3. Public site
 
-| # | Screenshot | How |
+| # | Screenshot | Description |
 |---|---|---|
-| 3.1 | **Browse municipalities** | `/` with all tenant cards. |
-| 3.2 | **Tenant home ×2** | `/burnaby` and `/surrey` (different colours, logos, taglines, election date). |
-| 3.3 | Case-insensitive / not found | `/Richmond` opens the Richmond site (the URL is normalized to `/richmond`) (a) and `/vancouver` shows "Municipality not found" (b). |
-| 3.4 | **Candidates with search/filter** | `/burnaby/candidates`, type a name, select a position. |
-| 3.5 | Candidate details | Click a candidate (photo, biography, *Add to my guide*). |
-| 3.6 | **Voting guide** | Add a Mayor and a Councillor → *My voting guide* with seat counts (a); on the candidates page the other Mayor shows the disabled *Seats full (1/1)* button (b). |
-| 3.7 | **One municipality per guide** | Go to `/surrey/candidates`, *Add to my guide* → the *Start a new voting guide?* dialog. |
-| 3.8 | **Session storage** | `F12` → *Application* → *Session storage* → `https://localhost:5001` → key `mems.votingGuide` (ids only). *Local storage* has no app data. |
-| 3.9 | **No data sent** (optional, strong evidence) | `F12` → *Network*, filter *Fetch/XHR*, add/remove guide items: only `GET /api/...` requests appear. |
-| 3.10 | **Printable guide** | *Printable guide* page (municipality, election date, candidates, positions, print date) (a) and its `Ctrl + P` print preview, where the buttons are hidden (b). |
-| 3.11 | Mobile | `F12` → device toolbar (iPhone) on `/burnaby/candidates`. |
+| 3.1 | **Browse municipalities** | Cards for all five municipalities with logo, election day and tagline. |
+| 3.2 | **Tenant home ×2** | The Burnaby home page in purple (a) and the Surrey home page in teal (b), each with its own logo, tagline and election date. |
+| 3.3 | Case-insensitive / not found | `/Richmond` opens the Richmond site (a); `/vancouver` shows "Municipality not found" (b). |
+| 3.4 | **Candidates with search/filter** | Burnaby candidates filtered by the name search "a" and the position Councillor: 2 results. |
+| 3.5 | Candidate details | Julia Kowalski's details with photo, biography and the Add to my guide button. |
+| 3.6 | **Voting guide** | My voting guide for Burnaby with Mayor 1 of 1 and Councillor 1 of 8 chosen (a); on the candidates page the other Mayor candidate shows "Seats full (1/1)" (b). |
+| 3.7 | **One municipality per guide** | Adding a Surrey candidate while the guide holds Burnaby candidates asks whether to keep the Burnaby guide or start a new one. |
+| 3.8 | **Session storage** | Session storage of `https://localhost:5001`: the key `mems.votingGuide` holds the tenant and candidate/position ids only. |
+| 3.9 | **No data sent** | Network requests (Fetch/XHR) while using the guide: only positions, municipality and candidates, all with status 200. |
+| 3.10 | **Printable guide** | The printable guide for Burnaby with election date, positions, chosen candidates and print date (a), and its print preview without buttons on one page (b). |
+| 3.11 | Mobile | The Burnaby candidates page at phone width. |
 
-## 4. API testing (`https://localhost:7201/swagger`)
+## 4. API testing
 
-| # | Screenshot | How |
+| # | Screenshot | Description |
 |---|---|---|
-| 4.1 | **Swagger UI** | Endpoint list (municipalities, positions, candidates, images, auth). |
-| 4.2 | Login | `POST /api/auth/login` with `{"userName":"burnabyadmin","password":"P@$$w0rd"}` → 200 with token (a) → *Authorize* with the token (b). |
-| 4.3 | **403** | `POST /api/{tenant}/candidates` with tenant `surrey` (still authorized as burnabyadmin) → 403 ProblemDetails. Swagger UI sends the token only to operations that require authentication, so use a write operation; a GET with a token of another tenant also returns 403 (see `api-isolation.sh`). |
-| 4.4 | **404** | `GET /api/{tenant}/candidates/{id}` with tenant `burnaby` and a Surrey candidate id (6) → 404 (a); `GET /api/{tenant}/positions` with tenant `vancouver` → 404 (b). |
-| 4.5 | 400 validation | `POST /api/{tenant}/candidates` (burnaby) with `{"name":"","positionId":1,"email":"x"}` → 400 `errors`. |
-| 4.6 | 401 | *Logout* in the Authorize dialog, `POST /api/{tenant}/positions` → 401. |
-| 4.7 | Script results | Terminal: `bash tests/e2e/api-isolation.sh` ending with `TOTAL: 36 passed, 0 failed`. |
+| 4.1 | **Swagger UI** | Swagger UI listing the API endpoints. |
+| 4.2 | Login | `POST /api/auth/login` for burnabyadmin returns 200 with a JWT (a); the Authorize dialog shows the Bearer token as authorized (b). |
+| 4.3 | **403** | `POST /api/surrey/candidates` with the burnabyadmin token returns 403 "Access to this municipality is not allowed". |
+| 4.4 | **404** | `GET /api/burnaby/candidates/6` (a Surrey candidate) returns 404 (a); `GET /api/vancouver/positions` returns 404 "Municipality not found" (b). |
+| 4.5 | 400 validation | `POST /api/burnaby/candidates` with an empty name, an invalid email and an invalid website returns 400 with an error for each field. |
+| 4.6 | 401 | Without a token, `POST /api/burnaby/positions` returns 401. |
+| 4.7 | Script results | `api-isolation.sh` results ending with `TOTAL: 36 passed, 0 failed`. |
 
 ## 5. SQL Server database
 
-The SQL password is in the AppHost user-secrets: `dotnet user-secrets list --project MEMS.AppHost`
-(`Parameters:sql-password`). The host port changes per run — read it in the dashboard (`sql` → endpoint `tcp`)
-or with `docker ps` (e.g. `127.0.0.1:30767->1433`).
-
-**Option A — VS Code (MSSQL extension) or SQL Server Management Studio / Azure Data Studio**
-Server `127.0.0.1,<port>`, SQL Login `sa`, password from user-secrets, *Trust server certificate* on, database `memsdb`.
-
-**Option B — command line inside the container**
-```bash
-docker exec -it <sql container> /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "<password>" -C -d memsdb
-```
-
-| # | Screenshot | Query / view |
+| # | Screenshot | Description |
 |---|---|---|
-| 5.1 | **Tables** | Object explorer of `memsdb`: Municipalities, Positions, Candidates, Images, AspNetUsers, AspNetRoles, AspNetUserRoles, __EFMigrationsHistory (plus unused Identity tables). There is no table for voting-guide selections or vote totals. |
-| 5.2 | **Tenants** | `SELECT Id, Name, Slug, PrimaryColor, ElectionDate FROM Municipalities;` |
-| 5.3 | **Tenant data** | `SELECT m.Slug, p.Name AS Position, c.Name AS Candidate FROM Candidates c JOIN Positions p ON p.Id = c.PositionId JOIN Municipalities m ON m.Id = c.MunicipalityId ORDER BY m.Slug, p.Name;` |
-| 5.4 | **Administrators and tenants** | `SELECT u.UserName, r.Name AS Role, m.Slug FROM AspNetUsers u JOIN AspNetUserRoles ur ON ur.UserId = u.Id JOIN AspNetRoles r ON r.Id = ur.RoleId LEFT JOIN Municipalities m ON m.Id = u.MunicipalityId;` |
-| 5.5 | Constraints (optional) | `SELECT name FROM sys.foreign_keys WHERE parent_object_id = OBJECT_ID('Candidates'); SELECT name, definition FROM sys.check_constraints;` |
-| 5.6 | Migrations | `SELECT * FROM __EFMigrationsHistory;` |
+| 5.1 | **Tables** | The tables of `memsdb`: Municipalities, Positions, Candidates, Images, the Identity tables and __EFMigrationsHistory; there is no table for voting-guide selections. |
+| 5.2 | **Tenants** | The Municipalities table: five tenants with slug, primary colour and election date. |
+| 5.3 | **Tenant data** | Candidates of every tenant with their position (22 rows). |
+| 5.4 | **Administrators and tenants** | Administrator accounts with role and municipality; super has no municipality. |
+| 5.5 | Constraints | The foreign keys of Candidates, including the composite key to Positions, and the check constraints for the lowercase slug and the number of seats. |
+| 5.6 | Migrations | The applied migration `20261118173947_InitialCreate`. |
